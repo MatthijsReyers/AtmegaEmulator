@@ -1,31 +1,13 @@
-; Sept 5 2019
-;
-; Matthijs Reyers
-;
-; Bonus assignment
-
-.device atmega168
-
-ldi     r17, 0          ; one multiplicand, try other values!
-ldi     r18, 3          ; the other multiplicand, try other values!
-
-; ############### OUR CODE ###############
-
-ldi     r16, 0          ; r16 will carry final result.
-
-loop:  
-    sbrc    r18, 0      ; skip next if bit is clear
-    add     r16, r17    ; add thing
-    lsl     r17         ; shift r17 left (to multiply it)
-    lsr     r18         ; shift r18 right (to get next bit)
-
-    brne    loop        ; checks if zero flag is set by lsr (which is done when r18 is full of zeros!!)
-
-; ########################################
-
-call sendr16tolaptop ; send calculation result to laptop
-
-again:
-    rjmp again ; finished, go into infinite loop
-    
-.include "rs232link.inc"
+.device atmega168       ; message to assembler not an instruction.
+ldi     r17, 0          ; 1110 0000 0001 0000
+; ldi     r18, 3          ; 1110 0000 0010 0011
+; ldi     r16, 0          ; 1110 0000 0000 0000
+; loop:  
+;     sbrc    r18, 0      ; 1111 1101 0010 0000
+;     add     r16, r17    ; 0000 1111 0000 0001
+;     lsl     r17         ; 0000 1100 0001 0001
+;     lsr     r18         ; 1001 0101 0010 0110
+;     brne    loop        ; 1111 01-- ---- ----
+; again:
+;     rjmp again          ; 1001 010- ---- 110- 
+;                         ; ---- ---- ---- ----

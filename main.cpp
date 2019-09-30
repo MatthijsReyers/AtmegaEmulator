@@ -8,8 +8,9 @@
 int main(int argc, char* argv[])
 {
     initRegisters();
-    // std::string url = "progBonus.hex";
-    // loadprogram(url);
+    std::string url = "progBonus.hex";
+    loadprogram(url);
+    showProgram();
 
     loadDebugProgram();
     
