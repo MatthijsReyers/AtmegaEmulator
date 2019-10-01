@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <sstream>
 #include <vector>
 #include <iostream>
 #include <fstream>
@@ -13,26 +14,68 @@
 std::vector<optcode> program;
 int64_t programCounter;
 
+
+// Why is this not a default function?
+// -----------------------------------------------------------
+int convertHex(char* hexStr)
+{
+    int out;
+    std::stringstream ss;
+    ss << hexStr[0] << hexStr[1];
+    ss >> std::hex >> out;
+    return out;
+}
+
+
+// Load progam function that parses the .hex file.
+// -----------------------------------------------------------
 void loadprogram(std::string &fileUrl)
 {
-    char optcodeBuffer[2];
-    short convertBuffer;
+    // Open file object.
+    // -------------------------------------------------------
     std::ifstream programFile;
     programFile.open(fileUrl);
-    while (programFile.good())
+
+    // Skip first line (the program does not support initial 
+    // segment offset, so will just ignore it for now).
+    // -------------------------------------------------------
+    programFile.seekg(18);
+    
+    // Parse first row.
+    // -------------------------------------------------------
+    char byteCount[2]; programFile.read(byteCount, 2);
+    char address[4]; programFile.read(address, 4);
+    char recordtype[2]; programFile.read(recordtype, 2);
+
+    int byteCountReal = convertHex(byteCount) * 2;
+    char optcodes[32]; programFile.read(optcodes, byteCountReal);
+    for (int i = 0; i < (byteCountReal/2); i++)
     {
-        // Read two bytes (= chars) from file.
-        programFile.read(optcodeBuffer, 2);
-
-        // Convert bytes to one short.
-        convertBuffer = (((short)optcodeBuffer[0]) << 8) | (0x00ff & optcodeBuffer[1]);
-
-        std::cout << convertBuffer << std::endl;
-
-        // Append to program vector.
-        program.push_back(optcode(convertBuffer));
+        int code = convertHex()
     }
-    printf("done loading!\n");
+    
+
+    // while (programFile.good() && buffer[0] != ':')
+    // {
+    //     programFile.read(buffer, 1);
+
+    //     std::cout << buffer << std::endl;
+    // }
+
+    // while (programFile.good())
+    // {
+    //     // Read two bytes (= chars) from file.
+    //     programFile.read(optcodeBuffer, 2);
+
+    //     // Convert bytes to one short.
+    //     convertBuffer = (((short)optcodeBuffer[0]) << 8) | (0x00ff & optcodeBuffer[1]);
+
+    //     std::cout << convertBuffer << std::endl;
+
+    //     // Append to program vector.
+    //     program.push_back(optcode(convertBuffer));
+    // }
+    // printf("done loading!\n");
 }
 
 void showProgram()
