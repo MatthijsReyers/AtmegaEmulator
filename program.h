@@ -21,7 +21,7 @@ int convertHex(char* hexStr)
 {
     int out;
     std::stringstream ss;
-    ss << hexStr[0] << hexStr[1];
+    ss << hexStr;
     ss >> std::hex >> out;
     return out;
 }
@@ -43,42 +43,25 @@ void loadprogram(std::string &fileUrl)
     
     // Parse first row.
     // -------------------------------------------------------
-    char byteCount[2]; programFile.read(byteCount, 2);
-    char address[4]; programFile.read(address, 4);
-    char recordtype[2]; programFile.read(recordtype, 2);
+    char byteCount[3]; programFile.read(byteCount, 2);
+    char address[5]; programFile.read(address, 4);
+    char recordtype[3]; programFile.read(recordtype, 2);
 
+    // Read optcodes.
+    // -------------------------------------------------------
     int byteCountReal = convertHex(byteCount) * 2;
-    char optcodes[32]; programFile.read(optcodes, byteCountReal);
-    for (int i = 0; i < (byteCountReal*2); i = i + 4)
+    char optcodes[33]; programFile.read(optcodes, byteCountReal);
+    for (int i = 0; i < (byteCountReal-1); i=i+4)
     {
-        char temp[4] = {optcodes[i+2],optcodes[i+3],optcodes[i],optcodes[i+1]};
-        int code = convertHex(temp);
+        // Insert into program optcodes.
+        char temp[5] = {optcodes[i+2],optcodes[i+3],optcodes[i],optcodes[i+1],0x00};
+        program.push_back(optcode(convertHex(temp)));
     }
-    
-
-    // while (programFile.good() && buffer[0] != ':')
-    // {
-    //     programFile.read(buffer, 1);
-
-    //     std::cout << buffer << std::endl;
-    // }
-
-    // while (programFile.good())
-    // {
-    //     // Read two bytes (= chars) from file.
-    //     programFile.read(optcodeBuffer, 2);
-
-    //     // Convert bytes to one short.
-    //     convertBuffer = (((short)optcodeBuffer[0]) << 8) | (0x00ff & optcodeBuffer[1]);
-
-    //     std::cout << convertBuffer << std::endl;
-
-    //     // Append to program vector.
-    //     program.push_back(optcode(convertBuffer));
-    // }
-    // printf("done loading!\n");
 }
 
+
+// Unused debug functions.
+// -----------------------------------------------------------
 void showProgram()
 {
     for (auto &code : program)
@@ -87,7 +70,6 @@ void showProgram()
         std::cout << std::bitset<16>(temp) << std::endl;
     }
 }
-
 void loadDebugProgram()
 {
     program.push_back(optcode(0b1110000000000000)); // LDI r16 0

@@ -10,14 +10,10 @@ int main(int argc, char* argv[])
     initRegisters();
     std::string url = "progBonus.hex";
     loadprogram(url);
-
-
-    // showProgram();
-
-    // loadDebugProgram();
     
-    // LDI(program[0]);
-    // LDI(program[1]);
-    // ADC(program[2]);
-    
+    LDI(program[0]);
+    LDI(program[1]);
+    LDI(program[2]);
+    SBRC(program[3]);
+    ADD(program[4]);
 }

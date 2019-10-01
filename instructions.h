@@ -47,7 +47,7 @@ void ADC(optcode &code)
 void ADD(optcode &code) 
 {
     // Parse optcode.
-    short toAdd = 16 + ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 4));
+    short toAdd = 16 + ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 9));
     short toAddTo = 16 + ((code.getBits() & 0b0000000111110000) >> 4);
 
     // Calculate result and add to register.
@@ -248,4 +248,22 @@ void LDI(optcode &code)
 
     // Print some stuff (temporary because UI is not done yet.)
     std::cout << "ldi " << registers[reg].name << ", " << toLoad << std::endl;
+}
+
+// Skip if Bit in Register is Cleared.
+void SBRC(optcode &code)
+{
+    // Parse optcode
+    short bitNum = ((code.getBits() & 0b0000000000000111));
+    short toCheck = ((code.getBits() & 0b0000000111110000) >> 4);
+
+    // Get bit from register
+    bool state = registers[toCheck].getNthBit(bitNum);
+
+    // Skip instruction if register is clear;
+    if (state = false) programCounter = programCounter + 2;
+    else programCounter++;
+
+    // Print some stuff (temporary because UI is not done yet.)
+    std::cout << "sbrc " << registers[toCheck].name << ", " << bitNum << std::endl;
 }
