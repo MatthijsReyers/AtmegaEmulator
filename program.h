@@ -51,7 +51,8 @@ void loadprogram(std::string &fileUrl)
     char optcodes[32]; programFile.read(optcodes, byteCountReal);
     for (int i = 0; i < (byteCountReal*2); i = i + 4)
     {
-        int code = convertHex()
+        char temp[4] = {optcodes[i+2],optcodes[i+3],optcodes[i],optcodes[i+1]};
+        int code = convertHex(temp);
     }
     
 
