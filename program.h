@@ -49,7 +49,7 @@ void loadprogram(std::string &fileUrl)
 
     int byteCountReal = convertHex(byteCount) * 2;
     char optcodes[32]; programFile.read(optcodes, byteCountReal);
-    for (int i = 0; i < (byteCountReal/4); i++)
+    for (int i = 0; i < (byteCountReal*2); i = i + 4)
     {
         int code = convertHex()
     }
