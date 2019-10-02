@@ -21,13 +21,14 @@ bool flagI; // Global Interrupt Enable/Disable Flag
 // ========================================
 struct reg
 {
-    short fullbytes;
+    short mainbytes;
     std::string name;
 
-    short getValue() {return this->fullbytes;}
-    bool getNthBit(int n) {return (0b0001 & (fullbytes >> n));}
+    short getValue() {return this->mainbytes;}
+    bool getNthBit(int n) {return (0b0001 & (mainbytes >> n));}
     std::string getName() {return this->name;}
-    void loadValue(short u) {this->fullbytes = u;}
+    void setName(std::string nameToSet) {this->name = nameToSet;}
+    void loadValue(short u) {this->mainbytes = u;}
 };
 
 
@@ -48,6 +49,6 @@ void initRegisters()
 
         // Populate register vector.
         registers[i] = reg();
-        registers[i].name = nameString;
+        registers[i].setName(nameString);
     }
 }

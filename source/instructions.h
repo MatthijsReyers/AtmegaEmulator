@@ -1,16 +1,17 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
+#include <string>
 
-// #include <registers.h>
-#include <optcode.h>
+#include <opcode.h>
 #include <program.h>
 #include <registers.h>
 
 // Add with carry.
-void ADC(optcode &code) 
+void ADC(opcode &code) 
 {
-    // Parse optcode.
+    // Parse opcode.
     short toAdd = 16 + ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 4));
     short toAddTo = 16 + ((code.getBits() & 0b0000000111110000) >> 4);
 
@@ -39,16 +40,18 @@ void ADC(optcode &code)
     // Increment program counter.
     programCounter++;
 
-    // Print some stuff (temporary because UI is not done yet.)
-    std::cout << "adc " << registers[toAddTo].name << ", " << registers[toAdd].name << std::endl;
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "adc " << registers[toAddTo].name << ", " << registers[toAdd].name;
+    code.assembly = ss.str();
 }
 
 // Add without carry.
-void ADD(optcode &code) 
+void ADD(opcode &code) 
 {
-    // Parse optcode.
-    short toAdd = 16 + ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 9));
-    short toAddTo = 16 + ((code.getBits() & 0b0000000111110000) >> 4);
+    // Parse opcode.
+    short toAdd = ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 5));
+    short toAddTo = ((code.getBits() & 0b0000000111110000) >> 4);
 
     // Calculate result and add to register.
     int result = registers[toAddTo].getValue() + registers[toAdd].getValue();
@@ -79,9 +82,9 @@ void ADD(optcode &code)
 }
 
 // Logical AND.
-void AND(optcode &code)
+void AND(opcode &code)
 {
-    // Parse optcode.
+    // Parse opcode.
     short toAnd = 16 + ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 5));
     short toAndTo = 16 + ((code.getBits() & 0b0000000111110000) >> 4);
 
@@ -107,9 +110,9 @@ void AND(optcode &code)
 }
 
 // Logical AND with Immediate.
-void ANDI(optcode &code)
+void ANDI(opcode &code)
 {
-    // Parse optcode.
+    // Parse opcode.
     short toAnd = ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000111100000000) >> 4));
     short toAndTo = 16 + ((code.getBits() & 0b0000000011110000) >> 4);
 
@@ -136,9 +139,9 @@ void ANDI(optcode &code)
 }
 
 // Arithmetic Shift Right.
-void ASR(optcode &code)
+void ASR(opcode &code)
 {
-    // Parse optcode.
+    // Parse opcode.
     short toShift = 16 + ((code.getBits() & 0b0000000111110000) >> 4);
 
     // Carry flag is set to Bit 0.
@@ -169,9 +172,9 @@ void ASR(optcode &code)
 }
 
 // Bit Clear in SREG.
-void BCLR(optcode &code)
+void BCLR(opcode &code)
 {
-    // Parse optcode.
+    // Parse opcode.
     short flagNum = ((code.getBits() & 0b0000000001110000) >> 4);
 
     switch (flagNum)
@@ -195,9 +198,9 @@ void BCLR(optcode &code)
 }
 
 // Branch if Bit in SREG is Cleared
-void BRBC(optcode &code)
+void BRBC(opcode &code)
 {
-    // Parse optcode.
+    // Parse opcode.
     short flagNum = ((code.getBits() & 0b0000000000000111));
     short jumpAmount = ((code.getBits() & 0b0000001111111000) >> 3);
     
@@ -232,7 +235,7 @@ void BRBC(optcode &code)
 }
 
 // Load immediate.
-void LDI(optcode &code)
+void LDI(opcode &code)
 {
     // Extract value to be loaded into register.
     short toLoad = ((code.getBits() & 0b0000111100000000) >> 4) | (code.getBits() & 0b0000000000001111);
@@ -251,9 +254,9 @@ void LDI(optcode &code)
 }
 
 // Skip if Bit in Register is Cleared.
-void SBRC(optcode &code)
+void SBRC(opcode &code)
 {
-    // Parse optcode
+    // Parse opcode
     short bitNum = ((code.getBits() & 0b0000000000000111));
     short toCheck = ((code.getBits() & 0b0000000111110000) >> 4);
 

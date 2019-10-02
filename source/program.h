@@ -7,11 +7,11 @@
 #include <fstream>
 #include <bitset> // May be removed later, just here for debug reasons.
 
-#include <optcode.h>
+#include <opcode.h>
 
-// Global program vector that holds a list of all optcodes.
+// Global program vector that holds a list of all opcodes.
 // -----------------------------------------------------------
-std::vector<optcode> program;
+std::vector<opcode> program;
 int64_t programCounter;
 
 
@@ -47,15 +47,26 @@ void loadprogram(std::string &fileUrl)
     char address[5]; programFile.read(address, 4);
     char recordtype[3]; programFile.read(recordtype, 2);
 
-    // Read optcodes.
+    // Read opcodes.
     // -------------------------------------------------------
     int byteCountReal = convertHex(byteCount) * 2;
-    char optcodes[33]; programFile.read(optcodes, byteCountReal);
+    char opcodes[33]; programFile.read(opcodes, byteCountReal);
     for (int i = 0; i < (byteCountReal-1); i=i+4)
     {
-        // Insert into program optcodes.
-        char temp[5] = {optcodes[i+2],optcodes[i+3],optcodes[i],optcodes[i+1],0x00};
-        program.push_back(optcode(convertHex(temp)));
+        // Insert into program opcodes.
+        char temp[5] = {opcodes[i+2],opcodes[i+3],opcodes[i],opcodes[i+1],0x00};
+        int bytes = convertHex(temp);
+        program.push_back(opcode(bytes));
+
+        // Support for 32 bit instructions.
+        if (bytes & 0b1111111000000000 == 0b1001010000000000)
+        {
+            i = i + 4;
+            char temp[5] = {opcodes[i+2],opcodes[i+3],opcodes[i],opcodes[i+1],0x00};
+            int bytes = convertHex(temp);
+            int index = program.size() - 1;
+            program[index].make32bit(bytes);
+        }
     }
 }
 
@@ -72,7 +83,7 @@ void showProgram()
 }
 void loadDebugProgram()
 {
-    program.push_back(optcode(0b1110000000000000)); // LDI r16 0
-    program.push_back(optcode(0b1110000000010011)); // LDI r17 3
-    program.push_back(optcode(0b0001110000000001)); // ADC r16 r7
+    program.push_back(opcode(0b1110000000000000)); // LDI r16 0
+    program.push_back(opcode(0b1110000000010011)); // LDI r17 3
+    program.push_back(opcode(0b0001110000000001)); // ADC r16 r7
 }
