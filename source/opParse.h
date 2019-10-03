@@ -78,10 +78,14 @@ void addopcode(void(& instruct)(opcode &code), int opcode, int codeLength)
 void initSearchTree()
 {
     try {
+        addopcode(ADC, 0b000111, 6);
         addopcode(ADD, 0b000011, 6);
+        addopcode(AND, 0b001000, 6);
+        addopcode(ANDI,0b0001, 4);
+        addopcode(ASR, 0b1001010, 4);
         addopcode(LDI, 0b1110, 4);
-        addopcode(SBRC, 0b1111110, 7);
-        addopcode(LSR, 0b1001010, 7);
+        addopcode(SBRC,0b1111110, 7);
+        // addopcode(LSR, 0b1001010, 7);
     }
     catch (const char* err) {std::cout << "ERROR: " << err << "\n"; exit(1);}
 }
