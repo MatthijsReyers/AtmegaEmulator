@@ -12,7 +12,7 @@
 // Global program vector that holds a list of all opcodes.
 // -----------------------------------------------------------
 std::vector<opcode> program;
-int64_t programCounter;
+int64_t programCounter = 0;
 
 
 // Why is this not a default function?

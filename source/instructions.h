@@ -77,8 +77,10 @@ void ADD(opcode &code)
     // Increment program counter.
     programCounter++;
 
-    // Print some stuff (temporary because UI is not done yet.)
-    std::cout << "add " << registers[toAddTo].name << ", " << registers[toAdd].name << std::endl;
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "add " << registers[toAddTo].name << ", " << registers[toAdd].name;
+    code.assembly = ss.str();
 }
 
 // Logical AND.
@@ -105,8 +107,10 @@ void AND(opcode &code)
     // Increment program counter.
     programCounter++;
 
-    // Print some stuff (temporary because UI is not done yet.)
-    std::cout << "and " << registers[toAndTo].name << ", " << registers[toAnd].name << std::endl;
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "and " << registers[toAndTo].name << ", " << registers[toAnd].name << std::endl;
+    code.assembly = ss.str();
 }
 
 // Logical AND with Immediate.
@@ -134,8 +138,10 @@ void ANDI(opcode &code)
     // Increment program counter.
     programCounter++;
 
-    // Print some stuff (temporary because UI is not done yet.)
-    std::cout << "and " << registers[toAndTo].name << ", " << registers[toAnd].name << std::endl;
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "and " << registers[toAndTo].name << ", " << registers[toAnd].name;
+    code.assembly = ss.str();
 }
 
 // Arithmetic Shift Right.
@@ -167,8 +173,10 @@ void ASR(opcode &code)
     // Increment program counter.
     programCounter++;
 
-    // Print some stuff (temporary because UI is not done yet.)
-    std::cout << "asr " << registers[toShift].name << std::endl;
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "asr " << registers[toShift].name;
+    code.assembly = ss.str();
 }
 
 // Bit Clear in SREG.
@@ -193,8 +201,10 @@ void BCLR(opcode &code)
     // Increment program counter.
     programCounter++;
 
-    // Print some stuff (temporary because UI is not done yet.)
-    std::cout << "bclr " << flagNum << std::endl;
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "bclr " << flagNum;
+    code.assembly = ss.str();
 }
 
 // Branch if Bit in SREG is Cleared
@@ -230,8 +240,10 @@ void BRBC(opcode &code)
     // Increment program counter.
     programCounter++;
 
-    // Print some stuff (temporary because UI is not done yet.)
-    std::cout << "brbc " << flagNum << ", " << jumpAmount << std::endl;
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "brbc " << flagNum << ", " << jumpAmount;
+    code.assembly = ss.str();
 }
 
 // Load immediate.
@@ -241,7 +253,7 @@ void LDI(opcode &code)
     short toLoad = ((code.getBits() & 0b0000111100000000) >> 4) | (code.getBits() & 0b0000000000001111);
 
     // Identify register.
-    int reg = ((code.getBits() & 0b0000000011110000) >> 4) + 16;
+    short reg = ((code.getBits() & 0b0000000011110000) >> 4) + 16;
 
     // Load stuff into register.
     registers[reg].loadValue(toLoad);    
@@ -249,8 +261,43 @@ void LDI(opcode &code)
     // Increment program counter.
     programCounter++;
 
-    // Print some stuff (temporary because UI is not done yet.)
-    std::cout << "ldi " << registers[reg].name << ", " << toLoad << std::endl;
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "ldi " << registers[reg].name << ", " << toLoad;
+    code.assembly = ss.str();
+}
+
+// Logical Shift Right
+void LSR(opcode &code)
+{
+    // Parse opcode.
+    short toShift = ((code.getBits() & 0b0000000111110000) >> 4);
+
+    // Carry is set if least significant bit of register is set before shift.
+    flagC = registers[toShift].getNthBit(0);
+
+    // Negative flag
+    flagN = 0;
+
+    // Shift bits in register.
+    short shifted = registers[toShift].getValue() >> 1 & 0b0111111111111111;
+    registers[toShift].loadValue(shifted);
+
+    // V
+
+    // S
+
+    // Zero flag (set after shift).
+    if (registers[toShift].getValue() == 0) flagZ = 0;
+    else flagZ = 1;
+
+    // Increment program counter.
+    programCounter++;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "lsr " << registers[toShift].name;
+    code.assembly = ss.str();
 }
 
 // Skip if Bit in Register is Cleared.
@@ -267,6 +314,8 @@ void SBRC(opcode &code)
     if (state = false) programCounter = programCounter + 2;
     else programCounter++;
 
-    // Print some stuff (temporary because UI is not done yet.)
-    std::cout << "sbrc " << registers[toCheck].name << ", " << bitNum << std::endl;
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "sbrc " << registers[toCheck].name << ", " << bitNum;
+    code.assembly = ss.str();
 }
