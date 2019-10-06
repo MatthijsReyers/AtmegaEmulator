@@ -34,7 +34,8 @@ void drawInstructionRow(int progIndex, int y, int x)
     // ---------------------------------------------------------------
     if (progIndex == programCounter)
     {
-
+        mvaddstr(y+1, x+8, ">");
+        mvaddstr(y+1, x+25, "<");
     }
 }
 

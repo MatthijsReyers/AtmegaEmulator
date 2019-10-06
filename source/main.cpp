@@ -18,10 +18,11 @@ int main(int argc, char* argv[])
     loadprogram("testing/progBonus.hex");
     initSearchTree();
 
-    while (programCounter > program.size())
+    for (int i = 0; i < program.size(); i++)
     {
-        void(* func)(opcode &code) = parseOpcode(program[programCounter].getBits(), &SearchTree);
-        (* func)(program[programCounter]);
+        void(* func)(opcode &code) = parseOpcode(program[i], &SearchTree);
+        (* func)(program[i]);
+        std::cout << program[i].assembly << "\n";
     }
     
     programCounter = 0;

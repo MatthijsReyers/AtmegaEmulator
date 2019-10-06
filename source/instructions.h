@@ -42,7 +42,7 @@ void ADC(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "adc " << registers[toAddTo].name << ", " << registers[toAdd].name;
+    ss << "adc  " << registers[toAddTo].name << ", " << registers[toAdd].name;
     code.assembly = ss.str();
 }
 
@@ -79,7 +79,7 @@ void ADD(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "add " << registers[toAddTo].name << ", " << registers[toAdd].name;
+    ss << "add  " << registers[toAddTo].name << ", " << registers[toAdd].name;
     code.assembly = ss.str();
 }
 
@@ -109,7 +109,7 @@ void AND(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "and " << registers[toAndTo].name << ", " << registers[toAnd].name << std::endl;
+    ss << "and  " << registers[toAndTo].name << ", " << registers[toAnd].name << std::endl;
     code.assembly = ss.str();
 }
 
@@ -140,7 +140,7 @@ void ANDI(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "and " << registers[toAndTo].name << ", " << registers[toAnd].name;
+    ss << "and  " << registers[toAndTo].name << ", " << registers[toAnd].name;
     code.assembly = ss.str();
 }
 
@@ -175,7 +175,7 @@ void ASR(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "asr " << registers[toShift].name;
+    ss << "asr  " << registers[toShift].name;
     code.assembly = ss.str();
 }
 
@@ -282,7 +282,7 @@ void LDI(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "ldi " << registers[reg].name << ", " << toLoad;
+    ss << "ldi  " << registers[reg].name << ", " << toLoad;
     code.assembly = ss.str();
 }
 
