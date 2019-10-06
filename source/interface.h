@@ -1,3 +1,5 @@
+#pragma once
+
 #include <curses.h>
 #include <iomanip>
 #include <stdio.h>
@@ -5,11 +7,13 @@
 #include <locale.h>
 #include <sstream>
 #include <string>
-
 #include <iostream>
 #include <bitset>
 
+#include <registers.h>
 #include <program.h>
+#include <opParse.h>
+#include <opcode.h>
 
 void drawInstructionRow(int progIndex, int y, int x)
 {
@@ -85,6 +89,22 @@ void drawInstructions()
 
 }
 
+void drawRegisters()
+{
+    // Get size of terminal.
+    int winX, winY;
+    getmaxyx(stdscr, winY, winX);
+
+    for (int i = 0; i < 32; i++)
+    {
+        std::stringstream ss;
+        ss << "r" << i << " " ;
+        if (i<10) ss << " ";
+        ss << std::bitset<16>(registers[i].getValue()) << std::endl;
+        mvaddstr(1+i, winX-23, ss.str().c_str());
+    }
+}
+
 void drawOutline()
 {
     // Characters for interface.
@@ -124,6 +144,7 @@ void winResize()
     clear();
     drawInstructions();
     drawOutline();
+    drawRegisters();
     refresh();
 }
 
@@ -132,6 +153,7 @@ void winUpdate()
     clear();
     drawInstructions();
     drawOutline();
+    drawRegisters();
     refresh();
 }
 
@@ -146,28 +168,35 @@ void GUIrun()
     keypad(stdscr, true);
 
     winResize(); 
-
     bool running = true;
+    int key;
+    void(* func)(opcode &code);
+
+
     while (running)
     {
-        int key = getch();
+        // Check if program has run out.
+        if (programCounter == program.size()) throw "The end of the program has been reached.";
+
+        key = getch();
         switch (key)
         {
-        case KEY_RESIZE: 
-            winResize();
-            break;
-        
-        case KEY_BACKSPACE:
-            running = false;
-            break;
+            case KEY_RESIZE: 
+                winResize();
+                break;
+            
+            case KEY_BACKSPACE:
+                running = false;
+                break;
 
-        case '\n': // KEY_ENTER
-            programCounter++;
-            winUpdate();
-            break;
+            case '\n': // KEY_ENTER
+                func = parseOpcode(program[programCounter], &SearchTree);
+                func(program[programCounter]);
+                winUpdate();
+                break;
 
-        default:
-            break;
+            default:
+                break;
         }
     }
     

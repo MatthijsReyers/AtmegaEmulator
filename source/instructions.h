@@ -8,6 +8,9 @@
 #include <program.h>
 #include <registers.h>
 
+#include <iostream>
+#include <fstream>
+
 // Add with carry.
 void ADC(opcode &code) 
 {
@@ -56,6 +59,11 @@ void ADD(opcode &code)
     // Calculate result and add to register.
     int result = registers[toAddTo].getValue() + registers[toAdd].getValue();
     registers[toAddTo].loadValue((short)result);
+
+    std::ofstream myfile;
+    myfile.open ("debug.log");
+    myfile << result;
+    myfile.close();
 
     // Half carry flag.
     flagH = (result >= 16);
