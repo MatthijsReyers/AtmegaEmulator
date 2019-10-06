@@ -5,11 +5,12 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include <bitset> // May be removed later, just here for debug reasons.
 
 #include <opcode.h>
 
+
 // Global program vector that holds a list of all opcodes.
+// And the global programCounter.
 // -----------------------------------------------------------
 std::vector<opcode> program;
 int64_t programCounter = 0;
@@ -29,61 +30,74 @@ int convertHex(char* hexStr)
 
 // Load progam function that parses the .hex file.
 // -----------------------------------------------------------
-void loadprogram(std::string &fileUrl)
+void loadprogram(const std::string &fileUrl)
 {
     // Open file object.
     // -------------------------------------------------------
     std::ifstream programFile;
     programFile.open(fileUrl);
 
-    // Skip first line (the program does not support initial 
-    // segment offset, so will just ignore it for now).
+    // Read file line by line.
     // -------------------------------------------------------
-    programFile.seekg(18);
-    
-    // Parse first row.
-    // -------------------------------------------------------
-    char byteCount[3]; programFile.read(byteCount, 2);
-    char address[5]; programFile.read(address, 4);
-    char recordtype[3]; programFile.read(recordtype, 2);
-
-    // Read opcodes.
-    // -------------------------------------------------------
-    int byteCountReal = convertHex(byteCount) * 2;
-    char opcodes[33]; programFile.read(opcodes, byteCountReal);
-    for (int i = 0; i < (byteCountReal-1); i=i+4)
+    std::string line;
+    while (std::getline(programFile, line))
     {
-        // Insert into program opcodes.
-        char temp[5] = {opcodes[i+2],opcodes[i+3],opcodes[i],opcodes[i+1],0x00};
-        int bytes = convertHex(temp);
-        program.push_back(opcode(bytes));
+        // Check for start code, cause why not.
+        if (line.at(0) != ':') throw "Missing a start code for line in hex file?";
 
-        // Support for 32 bit instructions.
-        if (bytes & 0b1111111000000000 == 0b1001010000000000)
+        // Get byte count for row.
+        char temp[5] = {line.at(1),line.at(2),0x00};
+        int byteCount = convertHex(temp);
+
+        // Determine the record type for the row.
+        temp[0] = line.at(7);
+        temp[1] = line.at(8);
+        short recordType = convertHex(temp);
+
+        // Take action based on the type of record.
+        switch (recordType)
         {
-            i = i + 4;
-            char temp[5] = {opcodes[i+2],opcodes[i+3],opcodes[i],opcodes[i+1],0x00};
-            int bytes = convertHex(temp);
-            int index = program.size() - 1;
-            program[index].make32bit(bytes);
+            // Instructions will be added to program.
+            case 0x00:
+                for (int i = 0; i < byteCount*2; i = i+4)
+                {
+                    // Convert hex bytes to instruction bytes.
+                    temp[0] = line.at(11+i);
+                    temp[1] = line.at(12+i);
+                    temp[2] = line.at(9+i);
+                    temp[3] = line.at(10+i);
+                    temp[4] = 0x00;
+                    short instructionBytes = convertHex(temp);
+
+                    // Add bytes to program.
+                    program.push_back(opcode(instructionBytes));
+
+                    // Support for 32 bit instructions.
+                    if (instructionBytes & 0b1111111000000000 == 0b1001010000000000)
+                    {
+                        // Convert other hex bytes to instruction bytes.
+                        temp[0] = line.at(15+i);
+                        temp[1] = line.at(16+i);
+                        temp[2] = line.at(13+i);
+                        temp[3] = line.at(14+i);
+
+                        // Make instruction 32 bit.
+                        short instructionBytes = convertHex(temp);
+                        int index = program.size() - 1;
+                        program[index].make32bit(instructionBytes);
+
+                        // Skip next two bytes.
+                        i = i + 2;
+                    }
+                }
+                break;
+            
+            // End of file. We're done here.
+            case 0x01: return;
+
+            // Other records types are not needed for this program, do nothing.
+            default: break;
         }
     }
 }
 
-
-// Unused debug functions.
-// -----------------------------------------------------------
-void showProgram()
-{
-    for (auto &code : program)
-    {
-        short temp = code.getBits();
-        std::cout << std::bitset<16>(temp) << std::endl;
-    }
-}
-void loadDebugProgram()
-{
-    program.push_back(opcode(0b1110000000000000)); // LDI r16 0
-    program.push_back(opcode(0b1110000000010011)); // LDI r17 3
-    program.push_back(opcode(0b0001110000000001)); // ADC r16 r7
-}

@@ -1,3 +1,8 @@
+// 
+// GCC Compile command: 
+// g++ -I ./source ./source/main.cpp -lncursesw
+// 
+
 #include <iostream>
 #include <string>
 
@@ -5,24 +10,21 @@
 #include <registers.h>
 #include <instructions.h>
 #include <opParse.h>
+#include <interface.h>
 
 int main(int argc, char* argv[])
 {
     initRegisters();
-    std::string url = "testing/progBonus.hex";
-    loadprogram(url);
+    loadprogram("testing/progBonus.hex");
+    initSearchTree();
 
-    for (int i = 0; i < program.size(); i++)
+    while (programCounter > program.size())
     {
-        try 
-        {
-            void(* instruction)(opcode &code) = parseOpcode(program[i], &SearchTree);
-            (* instruction)(program[i]);
-            std::cout << program[i].assembly << std::endl;
-        }
-        catch (const char* err)
-        {
-            std::cout << "== invalid optcode ==\n";
-        }
+        void(* func)(opcode &code) = parseOpcode(program[programCounter].getBits(), &SearchTree);
+        (* func)(program[programCounter]);
     }
+    
+    programCounter = 0;
+
+    GUIrun();
 }

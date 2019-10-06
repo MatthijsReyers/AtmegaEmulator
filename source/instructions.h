@@ -207,7 +207,7 @@ void BCLR(opcode &code)
     code.assembly = ss.str();
 }
 
-// Branch if Bit in SREG is Cleared
+// Branch if Bit in SREG is Cleared.
 void BRBC(opcode &code)
 {
     // Parse opcode.
@@ -243,6 +243,25 @@ void BRBC(opcode &code)
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
     ss << "brbc " << flagNum << ", " << jumpAmount;
+    code.assembly = ss.str();
+}
+
+// Branch if not equal.
+void BRNE(opcode &code)
+{
+    // Parse opcode.
+    short toJump = (code.getBits() & 0b0000000111111000 >> 3);
+
+    // Forward or backwards? (Take care of two's compliment).
+    if (code.getNthBit(9)) toJump = ((~toJump & 0b0111111) + 1)*-1;
+    
+    // Do the actual jumping.
+    if (!flagZ) programCounter = programCounter + 1 + toJump;
+    else programCounter++;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "brne " << toJump;
     code.assembly = ss.str();
 }
 
@@ -287,9 +306,8 @@ void LSR(opcode &code)
 
     // S
 
-    // Zero flag (set after shift).
-    if (registers[toShift].getValue() == 0) flagZ = 0;
-    else flagZ = 1;
+    // Zero flag (determined after shift).
+    flagZ = (registers[toShift].getValue() == 0);
 
     // Increment program counter.
     programCounter++;
@@ -297,6 +315,24 @@ void LSR(opcode &code)
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
     ss << "lsr " << registers[toShift].name;
+    code.assembly = ss.str();
+}
+
+// Relative jump
+void RJMP(opcode &code)
+{
+    // Parse opcode.
+    short toJump = (code.getBits() & 0b0000011111111111);
+
+    // Forward or backwards? (Take care of two's compliment).
+    if (code.getNthBit(11)) toJump = ((~toJump & 0b011111111111) + 1)*-1;
+    
+    // Ajust program counter to jump.
+    programCounter = programCounter + 1 + toJump;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "rjmp " << toJump;
     code.assembly = ss.str();
 }
 
