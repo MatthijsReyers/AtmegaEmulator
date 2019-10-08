@@ -17,6 +17,11 @@
 
 void drawInstructionRow(int progIndex, int y, int x)
 {
+    // Set color if drawing the active instruction.
+    // ---------------------------------------------------------------
+    if (progIndex == programCounter) attrset(COLOR_PAIR(1));
+    else attrset(COLOR_PAIR(0));
+
     // Draw the program index row.
     // ---------------------------------------------------------------
     std::stringstream ss;
@@ -31,16 +36,14 @@ void drawInstructionRow(int progIndex, int y, int x)
     ss << std::bitset<16>(program[progIndex].getBits());
     mvaddstr(y+1, x+9, ss.str().c_str());
 
-    // Draw assembly if possible.
+    // Draw assembly if possible. (Clearing row first).
+    // ---------------------------------------------------------------
+    mvaddstr(y+1, x+28, "               ");
     mvaddstr(y+1, x+28, program[progIndex].assembly.c_str());
 
-    // Special layout in case of drawing the active instruction.
+    // Reset colours.
     // ---------------------------------------------------------------
-    if (progIndex == programCounter)
-    {
-        mvaddstr(y+1, x+8, ">");
-        mvaddstr(y+1, x+25, "<");
-    }
+    attrset(COLOR_PAIR(0));
 }
 
 void drawInstructions()
@@ -48,6 +51,42 @@ void drawInstructions()
     // Get size of terminal.
     int winX, winY;
     getmaxyx(stdscr, winY, winX);
+
+    // ================================================================
+    // Box around instructions.
+    // ================================================================
+
+    // Top & bottom lines.
+    for (int i = 0; i != 45; i++)
+    {
+        mvaddstr(0, i, "═");
+        mvaddstr(winY-2, i, "═");
+    }
+
+    // Side lines.
+    for (int y = 1; y < winY-1; y++)
+    {
+        mvaddstr(y, 0, "║");
+        mvaddstr(y, 8, "│");
+        mvaddstr(y, 27, "│");
+        mvaddstr(y, 45, "║");
+    }
+
+    // Corner pieces.
+    mvaddstr(0,0,"╔");
+    mvaddstr(0,45,"╗");
+    mvaddstr(winY-2,0,"╚");
+    mvaddstr(winY-2,45,"╝");
+
+    // Connecting pieces.
+    mvaddstr(winY-2,8,"╧");
+    mvaddstr(winY-2,27,"╧");
+    mvaddstr(0,8,"╤");
+    mvaddstr(0,27,"╤");
+
+    // ================================================================
+    // Each row of instructions.
+    // ================================================================
 
     // Get amount of instructions above active instruction.
     int instructionsCount = program.size();
@@ -105,55 +144,61 @@ void drawRegisters()
     }
 }
 
-void drawOutline()
+void msgBox(std::string msg)
 {
-    // Characters for interface.
-    const char* horizontal = "═";
-    const char* vertical = "║";
+    clear();
 
     // Get size of terminal.
     int winX, winY;
     getmaxyx(stdscr, winY, winX);
 
-    // Top & bottom lines.
-    for (int i = 0; i != winX; i++)
+    // Calculate box size.
+    int boxLength = msg.length() + 4;
+
+    int Xstart = (winX - boxLength) / 2;
+    int Ystart = (winY - 3) / 2;
+
+    // Draw message.
+    mvaddstr(Ystart+1,Xstart+2,msg.c_str());
+
+    // Characters for interface.
+    const char* horizontal = "═";
+    const char* vertical = "║";
+
+    // Draw horizontal lines of box.
+    for (int i = 0; i < boxLength; i++)
     {
-        mvaddstr(0, i, horizontal);
-        mvaddstr(winY-2, i, horizontal);
+        mvaddch(Ystart-1, Xstart+i, ' ');
+        mvaddstr(Ystart, Xstart+i, horizontal);
+        mvaddstr(Ystart+2, Xstart+i, horizontal);
+        mvaddch(Ystart+3, Xstart+i, ' ');
     }
 
-    // Side lines.
-    for (int y = 1; y < winY-1; y++)
-    {
-        mvaddstr(y, 0, vertical);
-        mvaddstr(y, winX-1, vertical);
-    }
+    // Draw vertical lines of box.
+    mvaddstr(Ystart, Xstart, "╔");
+    mvaddstr(Ystart+1, Xstart, "║");
+    mvaddstr(Ystart+2, Xstart, "╚");
+    mvaddstr(Ystart, Xstart+boxLength-1, "╗");
+    mvaddstr(Ystart+1, Xstart+boxLength-1, "║");
+    mvaddstr(Ystart+2, Xstart+boxLength-1, "╝");
 
-    // Corner pieces.
-    mvaddstr(0,0,"╔");
-    mvaddstr(0,winX-1,"╗");
-    mvaddstr(winY-2,0,"╚");
-    mvaddstr(winY-2,winX-1,"╝");
-
-    // Place helpful guides at the bottom.
-    mvaddstr(winY-1,0,"[ENTER] next instruction  ║  [A] start/stop  ║  [Ctrl+C] exit");
-}
-
-void winResize()
-{
-    clear();
-    drawInstructions();
-    drawOutline();
-    drawRegisters();
     refresh();
 }
 
 void winUpdate()
 {
-    clear();
+    // Get size of terminal.
+    int winX, winY;
+    getmaxyx(stdscr, winY, winX);
+
+    // Place helpful guides at the bottom.
+    mvaddstr(winY-1,0,"[ENTER] next instruction  ║  [R] reset  ║  [TAB] next tab  ║  [UP/DOWN] scroll  ║  [Ctrl+C] exit");
+
+    // Draw/update all parts of the interface.
     drawInstructions();
-    drawOutline();
     drawRegisters();
+
+    // Refresh terminal.
     refresh();
 }
 
@@ -167,32 +212,63 @@ void GUIrun()
     setlocale(LC_ALL, "");
     keypad(stdscr, true);
 
-    winResize(); 
+    // Setup terminal colours for ncurses.
+    // ------------------------------------------------------
+    use_default_colors();
+    start_color();
+    init_pair(0, 7, 0);
+    init_pair(1, 7, 6);
+
+    // Do intial screen update to draw interface for the first time.
+    // ------------------------------------------------------
+    winUpdate();
+
     bool running = true;
     int key;
     void(* func)(opcode &code);
 
-
     while (running)
     {
         // Check if program has run out.
-        if (programCounter == program.size()) throw "The end of the program has been reached.";
+        // ----------------------------------------
+        if (programCounter == program.size())
+        {
+            msgBox("The program has finished.");
+        }
 
+        // Input parsing.
+        // ----------------------------------------
         key = getch();
         switch (key)
-        {
+        {   
             case KEY_RESIZE: 
-                winResize();
-                break;
-            
-            case KEY_BACKSPACE:
-                running = false;
+                clear();
+                winUpdate();
                 break;
 
             case '\n': // KEY_ENTER
                 func = parseOpcode(program[programCounter], &SearchTree);
                 func(program[programCounter]);
                 winUpdate();
+                break;
+            
+            case 'r': // RESET
+                programCounter = 0;
+                resetRegisters();
+                winUpdate();
+                break;
+
+            case KEY_BTAB:
+                mvaddstr(40,40, "TESTING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                winUpdate();
+                break;
+
+            case KEY_UP:
+                running = false;
+                break;
+
+            case KEY_DOWN:
+                running = false;
                 break;
 
             default:

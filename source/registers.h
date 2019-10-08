@@ -52,3 +52,15 @@ void initRegisters()
         registers[i].setName(nameString);
     }
 }
+
+void resetRegisters()
+{
+    for (int i = 0; i < 32; i++)
+    {
+        registers[i].loadValue(0);
+    }
+    // for (reg element : registers)
+    // {
+    //     element.loadValue(0b0000000000000000);
+    // }
+}

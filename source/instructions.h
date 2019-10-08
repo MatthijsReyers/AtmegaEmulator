@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <bitset>
 
 #include <opcode.h>
 #include <program.h>
@@ -59,11 +60,6 @@ void ADD(opcode &code)
     // Calculate result and add to register.
     int result = registers[toAddTo].getValue() + registers[toAdd].getValue();
     registers[toAddTo].loadValue((short)result);
-
-    std::ofstream myfile;
-    myfile.open ("debug.log");
-    myfile << result;
-    myfile.close();
 
     // Half carry flag.
     flagH = (result >= 16);
@@ -156,7 +152,7 @@ void ANDI(opcode &code)
 void ASR(opcode &code)
 {
     // Parse opcode.
-    short toShift = 16 + ((code.getBits() & 0b0000000111110000) >> 4);
+    short toShift = (code.getBits() & 0b0000000111110000) >> 4;
 
     // Carry flag is set to Bit 0.
     flagC = registers[toShift].getNthBit(0);
@@ -240,7 +236,7 @@ void BRBC(opcode &code)
         default: printf("MASSIVE ERROR!"); break;
     }
 
-    if (flagState != true)
+    if (!flagState)
     {
         programCounter = programCounter + jumpAmount;
     }
@@ -258,11 +254,11 @@ void BRBC(opcode &code)
 void BRNE(opcode &code)
 {
     // Parse opcode.
-    short toJump = (code.getBits() & 0b0000000111111000 >> 3);
+    short toJump = (code.getBits() & 0b0000000111111000) >> 3;
 
     // Forward or backwards? (Take care of two's compliment).
-    if (code.getNthBit(9)) toJump = ((~toJump & 0b0111111) + 1)*-1;
-    
+    if (code.getNthBit(9)) toJump = (((~toJump) & 0b00111111) + 1) * -1;
+
     // Do the actual jumping.
     if (!flagZ) programCounter = programCounter + 1 + toJump;
     else programCounter++;
