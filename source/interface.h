@@ -9,11 +9,15 @@
 #include <string>
 #include <iostream>
 #include <bitset>
+#include <vector>
 
 #include <registers.h>
 #include <program.h>
 #include <opParse.h>
 #include <opcode.h>
+
+std::vector<std::string> tabs;
+int activeTab = 0;
 
 void drawInstructionRow(int progIndex, int y, int x)
 {
@@ -128,6 +132,26 @@ void drawInstructions()
 
 }
 
+void drawTabs()
+{
+    // Get size of terminal.
+    int winX, winY;
+    getmaxyx(stdscr, winY, winX);
+
+    int base = 47;
+    for (int i = 0; i < tabs.size(); i++)
+    {
+        std::string tab = tabs[i];
+
+        mvaddstr(1,base, "|");
+        mvaddstr(1,base+2, tab.c_str());
+        mvaddstr(1,base+3+tab.length(), "|");
+
+        base = base + tab.length() + 3;
+    }
+    base = 47;
+}
+
 void drawRegisters()
 {
     // Get size of terminal.
@@ -197,10 +221,12 @@ void winUpdate()
     // Draw/update all parts of the interface.
     drawInstructions();
     drawRegisters();
+    drawTabs();
 
     // Refresh terminal.
     refresh();
 }
+
 
 void GUIrun()
 {    
@@ -219,6 +245,12 @@ void GUIrun()
     init_pair(0, 7, 0);
     init_pair(1, 7, 6);
 
+    // Create/name all tabs
+    // ------------------------------------------------------
+    tabs.push_back("registers");
+    tabs.push_back("test 01");
+    tabs.push_back("test 02");
+
     // Do intial screen update to draw interface for the first time.
     // ------------------------------------------------------
     winUpdate();
@@ -226,6 +258,8 @@ void GUIrun()
     bool running = true;
     int key;
     void(* func)(opcode &code);
+
+
 
     while (running)
     {
@@ -258,8 +292,11 @@ void GUIrun()
                 winUpdate();
                 break;
 
-            case KEY_BTAB:
-                mvaddstr(40,40, "TESTING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            case 't': // KEY_TAB
+                if (activeTab < tabs.size()-1) activeTab++;
+                else activeTab = 0;
+
+                clear();
                 winUpdate();
                 break;
 
