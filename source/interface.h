@@ -1,6 +1,7 @@
 #pragma once
 
 #include <curses.h>
+#include <math.h>
 #include <iomanip>
 #include <stdio.h>
 #include <unistd.h>
@@ -132,39 +133,120 @@ void drawInstructions()
 
 }
 
-void drawTabs()
+void drawTabRegisters(int base)
 {
     // Get size of terminal.
     int winX, winY;
     getmaxyx(stdscr, winY, winX);
 
+    // Determine the space to work with.
+    int height = winY - 5;
+    int width = winX - base - 4;
+
+    // Draw registers.
+    int counter = 0;
+    for (int collumn = 0; collumn < ceil(32.0/(float)height); collumn++)
+    {
+        // Draw border to right.
+        for (int y = 0; y <= height && counter < 32; y++)
+        {
+            mvaddstr(y + 2, base + 23 * (collumn+1), "|");
+        }
+
+        // Draw register values.
+        for (int y = 0; y <= height && counter < 32; y++)
+        {
+            std::stringstream ss;
+            ss << "r" << counter << " " ;
+            if (counter < 10) ss << " ";
+            ss << std::bitset<16>(registers[counter].getValue());
+            mvaddstr(y+2, base + 2 + (23*collumn), ss.str().c_str());
+
+            // Increment counter.
+            counter++;
+        }
+    
+    }
+}
+
+void drawTabs()
+{
+    // Get size of terminal.
+    // --------------------------------------------------------
+    int winX, winY;
+    getmaxyx(stdscr, winY, winX);
+
+
+    // Determine base offset
+    // --------------------------------------------------------
     int base = 47;
+
+
+    // Draw contents of tab window.
+    // --------------------------------------------------------
+    switch (activeTab)
+    {
+        case 0:
+            drawTabRegisters(base);
+            break;
+        
+        // Default should never be reached.
+        default: break;
+    }
+
+
+    // Draw border arround tab stuff.
+    // --------------------------------------------------------
+    for (int x = 0; x < (winX-base); x++)
+    {
+        mvaddstr(2, base + x, "═");
+        mvaddstr(winY-2, base + x, "═");
+        
+    }
+    for (int y = 2; y < winY-2; y++)
+    {
+        mvaddstr(y, base, "║");
+        mvaddstr(y, winX-1, "║");
+    }
+    mvaddstr(winY-2, base, "╚");
+    mvaddstr(winY-2, winX-1, "╝");
+    mvaddstr(2, winX-1, "╗");
+
+
+    // Draw tabs.
+    // --------------------------------------------------------
     for (int i = 0; i < tabs.size(); i++)
     {
         std::string tab = tabs[i];
 
-        mvaddstr(1,base, "|");
+        // Things to do for EVERY tab
+        // ----------------------------------------------------
+        mvaddstr(1,base, "║");
         mvaddstr(1,base+2, tab.c_str());
-        mvaddstr(1,base+3+tab.length(), "|");
+        mvaddstr(1,base+3+tab.length(), "║");
+        for (int a = 0; a < tab.length()+2; a++) {mvaddstr(0,1+base+a, "═");}
+        if (i == 0) {mvaddstr(0,base, "╔");}
+        if (i+1 != activeTab) mvaddstr(0,base+3+tab.length(), "╗");
+        if (i == 0 && i != activeTab) mvaddstr(2,base,"╔");
 
+
+        // Things to do for the ACTIVE tab
+        // ----------------------------------------------------
+        if (i == activeTab)
+        {
+            // Fix corner pieces.
+            mvaddstr(0,base, "╔");
+            mvaddstr(2,base+3+tab.length(), "╚");
+            if (i == 0) mvaddstr(2,base, "║");
+            else mvaddstr(2,base, "╝");
+
+            // Overwrite border.
+            for (int a = 0; a < tab.length()+2; a++) {mvaddstr(2,1+base+a, " ");}
+        }
+
+        // Increase base offset.
+        // ----------------------------------------------------
         base = base + tab.length() + 3;
-    }
-    base = 47;
-}
-
-void drawRegisters()
-{
-    // Get size of terminal.
-    int winX, winY;
-    getmaxyx(stdscr, winY, winX);
-
-    for (int i = 0; i < 32; i++)
-    {
-        std::stringstream ss;
-        ss << "r" << i << " " ;
-        if (i<10) ss << " ";
-        ss << std::bitset<16>(registers[i].getValue()) << std::endl;
-        mvaddstr(1+i, winX-23, ss.str().c_str());
     }
 }
 
@@ -215,18 +297,19 @@ void winUpdate()
     int winX, winY;
     getmaxyx(stdscr, winY, winX);
 
+    // Draw/update all parts of the interface.
+    drawInstructions();
+    drawTabs();
+
     // Place helpful guides at the bottom.
     mvaddstr(winY-1,0,"[ENTER] next instruction  ║  [R] reset  ║  [TAB] next tab  ║  [UP/DOWN] scroll  ║  [Ctrl+C] exit");
 
-    // Draw/update all parts of the interface.
-    drawInstructions();
-    drawRegisters();
-    drawTabs();
+    // Move cursor to bottom.
+    mvaddstr(winY-1,winX-1," ");
 
     // Refresh terminal.
     refresh();
 }
-
 
 void GUIrun()
 {    
@@ -248,8 +331,9 @@ void GUIrun()
     // Create/name all tabs
     // ------------------------------------------------------
     tabs.push_back("registers");
-    tabs.push_back("test 01");
-    tabs.push_back("test 02");
+    tabs.push_back("flags");
+    tabs.push_back("memory");
+    tabs.push_back("I/O");
 
     // Do intial screen update to draw interface for the first time.
     // ------------------------------------------------------
@@ -259,8 +343,6 @@ void GUIrun()
     int key;
     void(* func)(opcode &code);
 
-
-
     while (running)
     {
         // Check if program has run out.
@@ -268,6 +350,7 @@ void GUIrun()
         if (programCounter == program.size())
         {
             msgBox("The program has finished.");
+            exit(0);
         }
 
         // Input parsing.
