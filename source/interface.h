@@ -1,19 +1,20 @@
 #pragma once
 
 #include <curses.h>
-#include <math.h>
-#include <iomanip>
-#include <stdio.h>
-#include <unistd.h>
+#include <math.h>   // Used for rounding up.
+#include <iomanip>  // What's this again?
+#include <stdio.h>  // What's this again?
+#include <unistd.h> // What's this again?
 #include <locale.h>
 #include <sstream>
 #include <string>
-#include <iostream>
+#include <iostream> // Debug only.
 #include <bitset>
 #include <vector>
 
-#include <registers.h>
 #include <program.h>
+#include <registers.h>
+#include <stack.h>
 #include <opParse.h>
 #include <opcode.h>
 
@@ -150,11 +151,11 @@ void drawTabRegisters(int base)
         // Draw border to right.
         for (int y = 0; y <= height && counter < 32; y++)
         {
-            mvaddstr(y + 2, base + 23 * (collumn+1), "|");
+            mvaddstr(y + 2, base + 23 * (collumn+1), "│");
         }
 
         // Draw register values.
-        for (int y = 0; y <= height && counter < 32; y++)
+        for (int y = 1; y <= height && counter < 32; y++)
         {
             std::stringstream ss;
             ss << "r" << counter << " " ;
@@ -166,6 +167,46 @@ void drawTabRegisters(int base)
             counter++;
         }
     
+    }
+}
+
+void drawTabStack(int base)
+{
+    int winX, winY;
+    getmaxyx(stdscr, winY, winX);
+
+    std::stringstream ss;
+
+    // Create message about elements on the stack.
+    ss << "Element on stack: " << stack.size() << " ";
+    std::string stackElementsMsg = ss.str();
+    ss.str("");
+
+    // Create message about the size of the stack.
+    ss << "Size of stack: " << (float)stack.size() * 0.008 << " kilobytes";
+    std::string stackSizeMsg = ss.str();
+    ss.str("");
+
+    // Place messages and line.
+    for (int i = 2; i < winX-base-2; i++) mvaddstr(4, base+i, "-");
+    mvaddstr(3, base+2, stackElementsMsg.c_str());
+    mvaddstr(3, base+2+stackElementsMsg.length(), "│");
+    mvaddstr(4, base+2+stackElementsMsg.length(), "0");
+    mvaddstr(3, base+2+stackElementsMsg.length()+2, stackSizeMsg.c_str());
+
+
+    stack.push_back(0);
+    stack.push_back(6);
+    stack.push_back(9);
+    stack.push_back(12);
+    stack.push_back(8);
+    int counter = 0;
+    for (short layer : stack)
+    {
+        std::stringstream ss;
+        ss << std::bitset<8>(layer);
+        mvaddstr(5+counter, base+2, ss.str().c_str());
+        counter++;
     }
 }
 
@@ -188,6 +229,10 @@ void drawTabs()
     {
         case 0:
             drawTabRegisters(base);
+            break;
+
+        case 1:
+            drawTabStack(base);
             break;
         
         // Default should never be reached.
@@ -331,6 +376,7 @@ void GUIrun()
     // Create/name all tabs
     // ------------------------------------------------------
     tabs.push_back("registers");
+    tabs.push_back("stack");
     tabs.push_back("flags");
     tabs.push_back("memory");
     tabs.push_back("I/O");
@@ -375,20 +421,29 @@ void GUIrun()
                 winUpdate();
                 break;
 
-            case 't': // KEY_TAB
+            case KEY_RIGHT:
+            case '\t': // OR KEY_TAB
                 if (activeTab < tabs.size()-1) activeTab++;
                 else activeTab = 0;
 
                 clear();
                 winUpdate();
                 break;
+            
+            case KEY_LEFT:
+                if (activeTab > 0) activeTab--;
+                else activeTab = tabs.size()-1;
+
+                clear();
+                winUpdate();
+                break;
 
             case KEY_UP:
-                running = false;
+                // running = false;
                 break;
 
             case KEY_DOWN:
-                running = false;
+                // running = false;
                 break;
 
             default:

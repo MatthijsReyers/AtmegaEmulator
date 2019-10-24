@@ -269,6 +269,12 @@ void BRNE(opcode &code)
     code.assembly = ss.str();
 }
 
+// Long Call to a Subroutine.
+void CALL(opcode &code)
+{
+    
+}
+
 // Load immediate.
 void LDI(opcode &code)
 {
@@ -290,7 +296,7 @@ void LDI(opcode &code)
     code.assembly = ss.str();
 }
 
-// Logical Shift Right
+// Logical Shift Right.
 void LSR(opcode &code)
 {
     // Parse opcode.
@@ -322,7 +328,13 @@ void LSR(opcode &code)
     code.assembly = ss.str();
 }
 
-// Relative jump
+// Return from subroutine.
+void RET(opcode &code)
+{
+
+}
+
+// Relative jump.
 void RJMP(opcode &code)
 {
     // Parse opcode.
