@@ -1,13 +1,10 @@
 #pragma once
 
 #include <curses.h>
-#include <math.h>   // Used for rounding up.
-#include <iomanip>  // What's this again?
-#include <stdio.h>  // What's this again?
-#include <unistd.h> // What's this again?
 #include <locale.h>
-#include <sstream>
+#include <math.h>   // Used for rounding up.
 #include <string>
+#include <sstream>
 #include <iostream> // Debug only.
 #include <bitset>
 #include <vector>
@@ -134,7 +131,45 @@ void drawInstructions()
 
 }
 
-void drawTabRegisters(int base)
+void drawFlags()
+{
+    // Get size of terminal.
+    int winX, winY;
+    getmaxyx(stdscr, winY, winX);
+
+    // Do the box.
+    for (int y = 0; y < winY-5; y++)
+    {
+        mvaddstr(3+y,winX-1,"║");
+        mvaddstr(3+y,winX-7,"|");
+        mvaddstr(3+y,winX-16,"║");
+    }
+
+    // Top and bottom of box.
+    mvaddstr(2,winX-16,"╔══════════════╗");
+    mvaddstr(winY-2,winX-16,"╚══════════════╝");
+    
+    // int counter = 0;
+    // for (auto flag : flags)
+    // {
+    //     std::stringstream ss;
+    //     ss << flag.first;
+    //     mvaddstr(3+counter,winX-14, ss.str().c_str());
+
+    //     bool setornot = flag.second;
+    //     if (!setornot) {
+    //         attrset(COLOR_PAIR(1));
+    //         mvaddstr(3+counter,winX-5, "SET");
+    //         attrset(COLOR_PAIR(0));}
+    //     else mvaddstr(3+counter,winX-5, "CLS");
+
+    //     counter++;
+
+    //     if (flagZ) exit(0);
+    // }
+}
+
+void drawTabRegisters(int base, int end)
 {
     // Get size of terminal.
     int winX, winY;
@@ -165,12 +200,71 @@ void drawTabRegisters(int base)
 
             // Increment counter.
             counter++;
-        }
-    
+        }    
     }
 }
 
-void drawTabStack(int base)
+void drawTabSRAM(int base, int end)
+{
+    // Get the size of the terminal.
+    int winX, winY;
+    getmaxyx(stdscr, winY, winX);
+
+    // Figure out how many collumns/rows to draw.
+    int collumns = (end - base - 1) / 32;
+    int rows = winY - 7;
+
+    // Draw every collumn.
+    std::stringstream ss;
+    int address = 0;
+    for (int c = 0; c < collumns; c++)
+    {
+        // Draw all vertical lines.
+        for (int y = 0; y < winY-5; y++)
+        {
+            mvaddstr(3+y, base+10, "│");
+            mvaddstr(3+y, base+21, "│");
+            if (c != collumns - 1) mvaddstr(3+y, base+32, "║");
+        }
+        
+        // Draw table header.
+        mvaddstr(3, base+2, "Address │ Reg name │ Contents");
+        mvaddstr(4, base+2, "────────┼──────────┼─────────");
+
+        // Draw all the SRAM contents.
+        for (int i = 0; i < rows && address < registers.size(); i++)
+        {
+            // Base address for every row.
+            attrset(COLOR_PAIR(3));
+            mvaddstr(5+i, base+2, "0x00000");
+            attrset(COLOR_PAIR(0));
+
+            // Memmory address.
+            ss.str(""); ss << std::hex << address;
+            mvaddstr(5+i, base+9-ss.str().length(), ss.str().c_str());
+
+            // Row name.
+            if (registers[address].getName() == "reserved") attrset(COLOR_PAIR(3));
+            mvaddstr(5+i, base+12, registers[address].getName().c_str());
+            attrset(COLOR_PAIR(0));
+
+            // Row contents.
+            ss.str(""); ss << std::bitset<8>(registers[address].getValue());
+            mvaddstr(5+i, base+23, ss.str().c_str());
+
+            // Increment address.
+            address++;
+        }
+
+        // Increase base offset for next collumn.
+        base = base + 32;
+
+        // Check if we really need more collumns.
+        if (address >= registers.size()) break;// c = collumns;
+    }
+}
+
+void drawTabStack(int base, int end)
 {
     int winX, winY;
     getmaxyx(stdscr, winY, winX);
@@ -183,28 +277,26 @@ void drawTabStack(int base)
     ss.str("");
 
     // Create message about the size of the stack.
-    ss << "Size of stack: " << (float)stack.size() * 0.008 << " kilobytes";
+    ss << "Size of stack: " << (float)stack.size() * 0.016 << " kilobytes";
     std::string stackSizeMsg = ss.str();
     ss.str("");
 
     // Place messages and line.
-    for (int i = 2; i < winX-base-2; i++) mvaddstr(4, base+i, "-");
+    for (int i = 2; i < end-base-2; i++) mvaddstr(4, base+i, "─");
     mvaddstr(3, base+2, stackElementsMsg.c_str());
-    mvaddstr(3, base+2+stackElementsMsg.length(), "│");
-    mvaddstr(4, base+2+stackElementsMsg.length(), "0");
+    mvaddstr(3, base+2+stackElementsMsg.length(), "│ ");
+    mvaddstr(4, base+2+stackElementsMsg.length(), "┴");
     mvaddstr(3, base+2+stackElementsMsg.length()+2, stackSizeMsg.c_str());
 
-
-    stack.push_back(0);
-    stack.push_back(6);
-    stack.push_back(9);
-    stack.push_back(12);
-    stack.push_back(8);
     int counter = 0;
     for (short layer : stack)
     {
         std::stringstream ss;
-        ss << std::bitset<8>(layer);
+        int memaddr = 4351 - counter*16;
+        if (memaddr < 16) ss << "000";
+        else if (memaddr < 256) ss << "00";
+        else if (memaddr < 4096) ss << "0";
+        ss << std::hex << memaddr << " " << std::bitset<16>(layer);
         mvaddstr(5+counter, base+2, ss.str().c_str());
         counter++;
     }
@@ -218,9 +310,29 @@ void drawTabs()
     getmaxyx(stdscr, winY, winX);
 
 
-    // Determine base offset
+    // Create/name all tabs.
+    // ------------------------------------------------------
+    tabs.clear();
+    tabs.push_back("registers");
+    // tabs.push_back("stack");
+    tabs.push_back("SRAM");
+    tabs.push_back("I/O");
+    
+
+    // Determine base offset.
     // --------------------------------------------------------
     int base = 47;
+
+
+    // Determine end offset. (If flags should be a tab or not).
+    // --------------------------------------------------------
+    int endoff;
+    if (winY-5 > 8) {
+        endoff = winX - 17;
+        drawFlags();}
+    else {
+        endoff = winX;
+        tabs.push_back("flags");}
 
 
     // Draw contents of tab window.
@@ -228,11 +340,13 @@ void drawTabs()
     switch (activeTab)
     {
         case 0:
-            drawTabRegisters(base);
+            drawTabSRAM(base, endoff);
+            // drawTabRegisters(base, endoff);
             break;
 
         case 1:
-            drawTabStack(base);
+            drawTabSRAM(base, endoff);
+            // drawTabStack(base, endoff);
             break;
         
         // Default should never be reached.
@@ -242,7 +356,7 @@ void drawTabs()
 
     // Draw border arround tab stuff.
     // --------------------------------------------------------
-    for (int x = 0; x < (winX-base); x++)
+    for (int x = 0; x < (endoff-base); x++)
     {
         mvaddstr(2, base + x, "═");
         mvaddstr(winY-2, base + x, "═");
@@ -251,11 +365,11 @@ void drawTabs()
     for (int y = 2; y < winY-2; y++)
     {
         mvaddstr(y, base, "║");
-        mvaddstr(y, winX-1, "║");
+        mvaddstr(y, endoff-1, "║");
     }
     mvaddstr(winY-2, base, "╚");
-    mvaddstr(winY-2, winX-1, "╝");
-    mvaddstr(2, winX-1, "╗");
+    mvaddstr(winY-2, endoff-1, "╝");
+    mvaddstr(2, endoff-1, "╗");
 
 
     // Draw tabs.
@@ -263,6 +377,7 @@ void drawTabs()
     for (int i = 0; i < tabs.size(); i++)
     {
         std::string tab = tabs[i];
+
 
         // Things to do for EVERY tab
         // ----------------------------------------------------
@@ -371,15 +486,9 @@ void GUIrun()
     use_default_colors();
     start_color();
     init_pair(0, 7, 0);
-    init_pair(1, 7, 6);
-
-    // Create/name all tabs
-    // ------------------------------------------------------
-    tabs.push_back("registers");
-    tabs.push_back("stack");
-    tabs.push_back("flags");
-    tabs.push_back("memory");
-    tabs.push_back("I/O");
+    init_pair(1, 0, 7);
+    init_pair(2, 1, 2);
+    init_pair(3, 8, 0);
 
     // Do intial screen update to draw interface for the first time.
     // ------------------------------------------------------
@@ -406,19 +515,16 @@ void GUIrun()
         {   
             case KEY_RESIZE: 
                 clear();
-                winUpdate();
                 break;
 
             case '\n': // KEY_ENTER
                 func = parseOpcode(program[programCounter], &SearchTree);
                 func(program[programCounter]);
-                winUpdate();
                 break;
             
             case 'r': // RESET
                 programCounter = 0;
                 resetRegisters();
-                winUpdate();
                 break;
 
             case KEY_RIGHT:
@@ -427,7 +533,6 @@ void GUIrun()
                 else activeTab = 0;
 
                 clear();
-                winUpdate();
                 break;
             
             case KEY_LEFT:
@@ -435,7 +540,6 @@ void GUIrun()
                 else activeTab = tabs.size()-1;
 
                 clear();
-                winUpdate();
                 break;
 
             case KEY_UP:
@@ -446,9 +550,17 @@ void GUIrun()
                 // running = false;
                 break;
 
+            case 'd':
+                stack.push_back(0b0001);
+                break;
+
             default:
                 break;
         }
+
+        // Update window
+        // ----------------------------------------
+        winUpdate();
     }
     
     // Cleanup

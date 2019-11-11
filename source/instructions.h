@@ -22,7 +22,7 @@ void ADC(opcode &code)
     // Calculate result and add to register.
     int result = registers[toAddTo].getValue() + registers[toAdd].getValue();
     if (flagC) result++;
-    registers[toAddTo].loadValue((short)result);
+    registers[toAddTo].setValue((short)result);
 
     // Half carry flag.
     flagH = (result >= 16);
@@ -46,7 +46,7 @@ void ADC(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "adc  " << registers[toAddTo].name << ", " << registers[toAdd].name;
+    ss << "adc  " << registers[toAddTo].getName() << ", " << registers[toAdd].getName();
     code.assembly = ss.str();
 }
 
@@ -59,7 +59,7 @@ void ADD(opcode &code)
 
     // Calculate result and add to register.
     int result = registers[toAddTo].getValue() + registers[toAdd].getValue();
-    registers[toAddTo].loadValue((short)result);
+    registers[toAddTo].setValue((short)result);
 
     // Half carry flag.
     flagH = (result >= 16);
@@ -83,7 +83,7 @@ void ADD(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "add  " << registers[toAddTo].name << ", " << registers[toAdd].name;
+    ss << "add  " << registers[toAddTo].getName() << ", " << registers[toAdd].getName();
     code.assembly = ss.str();
 }
 
@@ -96,7 +96,7 @@ void AND(opcode &code)
 
     // Calcuate result and add to register.
     int result = registers[toAndTo].getValue() & registers[toAnd].getValue();
-    registers[toAndTo].loadValue((short)result);
+    registers[toAndTo].setValue((short)result);
 
     // S
 
@@ -113,7 +113,7 @@ void AND(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "and  " << registers[toAndTo].name << ", " << registers[toAnd].name << std::endl;
+    ss << "and  " << registers[toAndTo].getName() << ", " << registers[toAnd].getName() << std::endl;
     code.assembly = ss.str();
 }
 
@@ -126,7 +126,7 @@ void ANDI(opcode &code)
 
     // Calcuate result and add to register.
     int result = registers[toAndTo].getValue() & toAnd;
-    registers[toAndTo].loadValue((short)result);
+    registers[toAndTo].setValue((short)result);
 
     // S
 
@@ -144,7 +144,7 @@ void ANDI(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "and  " << registers[toAndTo].name << ", " << registers[toAnd].name;
+    ss << "and  " << registers[toAndTo].getName() << ", " << registers[toAnd].getName();
     code.assembly = ss.str();
 }
 
@@ -162,7 +162,7 @@ void ASR(opcode &code)
 
     // Actually shift bits and add bit 7.
     short result = (registers[toShift].getValue() >> 1) | (bit7 << 7);
-    registers[toShift].loadValue(result);
+    registers[toShift].setValue(result);
 
     // S
 
@@ -179,7 +179,7 @@ void ASR(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "asr  " << registers[toShift].name;
+    ss << "asr  " << registers[toShift].getName();
     code.assembly = ss.str();
 }
 
@@ -272,7 +272,9 @@ void BRNE(opcode &code)
 // Long Call to a Subroutine.
 void CALL(opcode &code)
 {
-    
+    int addr = (code.getBits() & 0b01) << 16 | (code.getBits() & 0b000111110000) << 13 | code.extrabytes;
+    std::cout << std::bitset<34>(code.getBits()) << std::endl;
+    std::cout << std::bitset<34>(addr) << std::endl;
 }
 
 // Load immediate.
@@ -285,14 +287,14 @@ void LDI(opcode &code)
     short reg = ((code.getBits() & 0b0000000011110000) >> 4) + 16;
 
     // Load stuff into register.
-    registers[reg].loadValue(toLoad);    
+    registers[reg].setValue(toLoad);    
 
     // Increment program counter.
     programCounter++;
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "ldi  " << registers[reg].name << ", " << toLoad;
+    ss << "ldi  " << registers[reg].getName() << ", " << toLoad;
     code.assembly = ss.str();
 }
 
@@ -310,7 +312,7 @@ void LSR(opcode &code)
 
     // Shift bits in register.
     short shifted = registers[toShift].getValue() >> 1 & 0b0111111111111111;
-    registers[toShift].loadValue(shifted);
+    registers[toShift].setValue(shifted);
 
     // V
 
@@ -324,7 +326,7 @@ void LSR(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "lsr " << registers[toShift].name;
+    ss << "lsr " << registers[toShift].getName();
     code.assembly = ss.str();
 }
 
@@ -368,6 +370,6 @@ void SBRC(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "sbrc " << registers[toCheck].name << ", " << bitNum;
+    ss << "sbrc " << registers[toCheck].getName() << ", " << bitNum;
     code.assembly = ss.str();
 }
