@@ -10,6 +10,12 @@
 #include <registers.h>
 #include <flags.h>
 
+
+void BREAK(opcode &code)
+{
+    exit(0);
+}
+
 // Add with carry.
 void ADC(opcode &code) 
 {
@@ -26,13 +32,10 @@ void ADC(opcode &code)
     // H - Half carry flag.
     // flags.setH(result >= 16);
 
-    // S
-
-
     // V
+    // flags.setV(1);
 
-
-    // N
+    // N - Negative flag.
     flags.setN(registers[toAddTo].getNthBit(7));
 
     // Z - Zero flag.
@@ -40,6 +43,9 @@ void ADC(opcode &code)
 
     // C - carry flag.
     flags.setC(result > 255);
+
+    // S - Sign flag.
+    flags.setN(flags.getV() != flags.getN());
     
     // Increment program counter.
     programCounter++;
@@ -64,20 +70,20 @@ void ADD(opcode &code)
     // Half carry flag.
     // flags.setH(result >= 16);
 
-    // S
-
-
     // V
 
-    // N
+    // N - Negative flag.
     flags.setN(registers[toAddTo].getNthBit(7));
 
-    // Z zero flag.
+    // Z - zero flag.
     flags.setZ(result == 0);
 
-    // C carry flag.
+    // C - carry flag.
     flags.setC(result > 255);
-    
+
+    // S - Sign flag.
+    flags.setN(flags.getV() != flags.getN());
+
     // Increment program counter.
     programCounter++;
 
@@ -90,7 +96,7 @@ void ADD(opcode &code)
 // Add immediate to Word.
 void ADIW(opcode &code)
 {
-    
+    programCounter++;
 }
 
 // Logical AND.
@@ -102,17 +108,19 @@ void AND(opcode &code)
 
     // Calcuate result and add to register.
     int result = registers[toAndTo].getValue() & registers[toAnd].getValue();
-    registers[toAndTo].setValue((short)result);
-
-    // S
+    registers[toAndTo].setValue(result);
 
     // V (cleared)
     flags.setV(0);
 
-    // N
+    // N - Negative flag.
+    flags.setN(registers[toAndTo].getNthBit(7));
 
     // Z - Zeroflag
     flags.setZ(result == 0);
+
+    // S - Sign flag.
+    flags.setN(flags.getV() != flags.getN());
 
     // Increment program counter.
     programCounter++;
@@ -134,16 +142,17 @@ void ANDI(opcode &code)
     int result = registers[toAndTo].getValue() & toAnd;
     registers[toAndTo].setValue(result);
 
-    // S
-
-    // V (cleared)
+    // V - Overflow flag (cleared).
     flags.setV(0);
 
-    // N - NegativeFlag is bit 7.
+    // N - Negative flag is bit 7.
     flags.setN(registers[toAndTo].getNthBit(7));
 
-    // Z - Zeroflag
+    // Z - Zero flag.
     flags.setZ(result == 0);
+
+    // S - Sign flag.
+    flags.setN(flags.getV() != flags.getN());
 
     // Increment program counter.
     programCounter++;
@@ -170,15 +179,17 @@ void ASR(opcode &code)
     short result = (registers[toShift].getValue() >> 1) | (bit7 << 7);
     registers[toShift].setValue(result);
 
-    // S
-
-    // V
+    // V - Overflow flag.
+    // flags.setV();
 
     // N - Negative flag is bit 7.
     flags.setN(registers[toShift].getNthBit(7));
 
-    // Z - Zero flag
+    // Z - Zero flag.
     flags.setZ(result == 0);
+
+    // S - Sign flag.
+    flags.setN(flags.getV() != flags.getN());
 
     // Increment program counter.
     programCounter++;
@@ -189,7 +200,7 @@ void ASR(opcode &code)
     code.assembly = ss.str();
 }
 
-// Bit Clear in SREG.
+// (Set) Bit Clear in SREG.
 void BCLR(opcode &code)
 {
     // Parse opcode.
@@ -211,7 +222,7 @@ void BCLR(opcode &code)
 void BLD(opcode &code)
 {
     // Parse opcode.
-    short regToLoad = (code.getBits() & 0b00111110000) >> 4);
+    short regToLoad = (code.getBits() & 0b00111110000) >> 4;
     short bitToLoad = (code.getBits() & 0b0111);
 
     //
@@ -233,9 +244,8 @@ void BRBC(opcode &code)
     short flagNum = ((code.getBits() & 0b0000000000000111));
     short jumpAmount = ((code.getBits() & 0b0000001111111000) >> 3);
     
-    // Convert jump amount.
-    if (((jumpAmount & 0b01000000) >> 6) == 1) jumpAmount = (jumpAmount & 0b00111111) * -1;
-    else jumpAmount = (jumpAmount & 0b00111111) - 1;
+    // Forward or backwards? (Take care of two's compliment).
+    if (code.getNthBit(9)) jumpAmount = (((~jumpAmount) & 0b00111111) + 1) * -1;
 
     // Jump if needed.
     bool flagState =  (bool)registers[0x5F].getNthBit(flagNum);
@@ -246,7 +256,19 @@ void BRBC(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "brbc " << flagNum << ", " << jumpAmount;
+    switch (flagNum)
+    {
+        case 0: ss << "brsh " << jumpAmount; break;
+        case 1: ss << "brne " << jumpAmount; break;
+        case 2: ss << "brpl " << jumpAmount; break;
+        case 3: ss << "brvc " << jumpAmount; break;
+        case 4: ss << "brge " << jumpAmount; break;
+        case 5: ss << "brhc " << jumpAmount; break;
+        case 6: ss << "brtc " << jumpAmount; break;
+        case 7: ss << "brid " << jumpAmount; break;
+
+        default: ss << "brbc " << flagNum << ", " << jumpAmount; break;
+    }
     code.assembly = ss.str();
 }
 
@@ -257,48 +279,73 @@ void BRBS(opcode &code)
     short flagNum = ((code.getBits() & 0b0000000000000111));
     short jumpAmount = ((code.getBits() & 0b0000001111111000) >> 3);
     
-    // Convert jump amount.
-    if (((jumpAmount & 0b01000000) >> 6) == 1) jumpAmount = (jumpAmount & 0b00111111) * -1;
-    else jumpAmount = (jumpAmount & 0b00111111) - 1;
+    // Forward or backwards? (Take care of two's compliment).
+    if (code.getNthBit(9)) jumpAmount = (((~jumpAmount) & 0b00111111) + 1) * -1;
 
     // Jump if needed.
-    bool flagState =  (bool)registers[0x5F].getNthBit(flagNum);
-    if (flagState) programCounter = programCounter + jumpAmount;
+    if (registers[0x5F].getNthBit(flagNum)) programCounter = programCounter + jumpAmount;
 
     // Increment program counter.
     programCounter++;
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "brbs " << flagNum << ", " << jumpAmount;
+    switch (flagNum)
+    {
+        case 0: ss << "brlo " << jumpAmount; break;
+        case 1: ss << "breq " << jumpAmount; break;
+        case 2: ss << "brmi " << jumpAmount; break;
+        case 3: ss << "brvs " << jumpAmount; break;
+        case 4: ss << "brlt " << jumpAmount; break;
+        case 5: ss << "brhs " << jumpAmount; break;
+        case 6: ss << "brts " << jumpAmount; break;
+        case 7: ss << "brie " << jumpAmount; break;
+    
+        default: ss << "brbs " << flagNum << ", " << jumpAmount; break;
+    }
     code.assembly = ss.str();
 }
 
-// Branch if not equal.
-void BRNE(opcode &code)
+// Bit set in SREG.
+void BSET(opcode &code)
 {
     // Parse opcode.
-    short toJump = (code.getBits() & 0b0000000111111000) >> 3;
+    short flagNum = ((code.getBits() & 0b0000000001110000) >> 4);
 
-    // Forward or backwards? (Take care of two's compliment).
-    if (code.getNthBit(9)) toJump = (((~toJump) & 0b00111111) + 1) * -1;
+    // Change the bit in SREG
+    registers[0x5F].setNthBit(flagNum,1);
 
-    // Do the actual jumping.
-    if (!flags.getZ()) programCounter = programCounter + 1 + toJump;
-    else programCounter++;
+    // Increment program counter.
+    programCounter++;
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "brne " << toJump;
+    ss << "bset " << flagNum;
     code.assembly = ss.str();
+}
+
+// Bit store from bit in Register to T flag.
+void BST(opcode &code)
+{
+    programCounter++;
 }
 
 // Long Call to a Subroutine.
 void CALL(opcode &code)
 {
-    int addr = (code.getBits() & 0b01) << 16 | (code.getBits() & 0b000111110000) << 13 | code.extrabytes;
-    std::cout << std::bitset<34>(code.getBits()) << std::endl;
-    std::cout << std::bitset<34>(addr) << std::endl;
+    programCounter++;
+}
+
+// Clear bit in I/O register.
+void CBI(opcode &code)
+{
+    programCounter++;
+}
+
+// Clear carry flag.
+void CLC(opcode &code)
+{
+    programCounter++;
 }
 
 // Load immediate.
@@ -340,10 +387,11 @@ void LSR(opcode &code)
 
     // V
 
-    // S
-
     // Zero flag (determined after shift).
     flags.setZ(registers[toShift].getValue() == 0);
+
+    // S - Sign flag.
+    flags.setN(flags.getV() != flags.getN());
 
     // Increment program counter.
     programCounter++;
@@ -396,4 +444,9 @@ void SBRC(opcode &code)
     std::stringstream ss;
     ss << "sbrc " << registers[toCheck].getName() << ", " << bitNum;
     code.assembly = ss.str();
+}
+
+void SLEEP(opcode &code)
+{
+    counter++;
 }
