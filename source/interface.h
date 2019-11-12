@@ -11,6 +11,7 @@
 
 #include <program.h>
 #include <registers.h>
+#include <flags.h>
 #include <stack.h>
 #include <opParse.h>
 #include <opcode.h>
@@ -137,39 +138,43 @@ void drawFlags()
     int winX, winY;
     getmaxyx(stdscr, winY, winX);
 
-    // Do the box.
+    // Outlines of the box.
     for (int y = 0; y < winY-5; y++)
     {
         mvaddstr(3+y,winX-1,"║");
-        mvaddstr(3+y,winX-7,"|");
         mvaddstr(3+y,winX-16,"║");
     }
 
-    // Top and bottom of box.
     mvaddstr(2,winX-16,"╔══════════════╗");
+    mvaddstr(3,winX-16,"║ Status flags ║");
+    mvaddstr(4,winX-16,"║ ───────┬──── ║");
+    for (int y = 0; y < 8; y++) mvaddstr(5+y,winX-7,"│");
+    mvaddstr(13,winX-16,"║ ───────┴──── ║");
     mvaddstr(winY-2,winX-16,"╚══════════════╝");
-    
-    // int counter = 0;
-    // for (auto flag : flags)
-    // {
-    //     std::stringstream ss;
-    //     ss << flag.first;
-    //     mvaddstr(3+counter,winX-14, ss.str().c_str());
 
-    //     bool setornot = flag.second;
-    //     if (!setornot) {
-    //         attrset(COLOR_PAIR(1));
-    //         mvaddstr(3+counter,winX-5, "SET");
-    //         attrset(COLOR_PAIR(0));}
-    //     else mvaddstr(3+counter,winX-5, "CLS");
+    // 
+    mvaddstr(5,winX-14,"C Flag");
+    mvaddstr(6,winX-14,"Z Flag");
+    mvaddstr(7,winX-14,"N Flag");
+    mvaddstr(8,winX-14,"V Flag");
+    mvaddstr(9,winX-14,"S Flag");
+    mvaddstr(10,winX-14,"H Flag");
+    mvaddstr(11,winX-14,"T Flag");
+    mvaddstr(12,winX-14,"I Flag");
 
-    //     counter++;
-
-    //     if (flagZ) exit(0);
-    // }
+    for (int i = 0; i < 8; i++)
+    {
+        bool state = registers[0x5F].getNthBit(i);
+        if (state) mvaddstr(5+i,winX-5, "SET");
+        else {
+            attrset(COLOR_PAIR(2));
+            mvaddstr(5+i,winX-5, "CLS");
+            attrset(COLOR_PAIR(0));
+        }
+    }
 }
 
-void drawTabRegisters(int base, int end)
+void drawTabBasicView(int base, int end)
 {
     // Get size of terminal.
     int winX, winY;
@@ -235,18 +240,18 @@ void drawTabSRAM(int base, int end)
         for (int i = 0; i < rows && address < registers.size(); i++)
         {
             // Base address for every row.
-            attrset(COLOR_PAIR(3));
+            attron(COLOR_PAIR(2));
             mvaddstr(5+i, base+2, "0x00000");
-            attrset(COLOR_PAIR(0));
+            attroff(COLOR_PAIR(2));
 
             // Memmory address.
             ss.str(""); ss << std::hex << address;
             mvaddstr(5+i, base+9-ss.str().length(), ss.str().c_str());
 
             // Row name.
-            if (registers[address].getName() == "reserved") attrset(COLOR_PAIR(3));
+            if (registers[address].getName() == "reserved") attron(COLOR_PAIR(2));
             mvaddstr(5+i, base+12, registers[address].getName().c_str());
-            attrset(COLOR_PAIR(0));
+            attroff(COLOR_PAIR(2));
 
             // Row contents.
             ss.str(""); ss << std::bitset<8>(registers[address].getValue());
@@ -313,41 +318,29 @@ void drawTabs()
     // Create/name all tabs.
     // ------------------------------------------------------
     tabs.clear();
-    tabs.push_back("registers");
+    tabs.push_back("Basic view");
     // tabs.push_back("stack");
     tabs.push_back("SRAM");
     tabs.push_back("I/O");
     
 
-    // Determine base offset.
+    // Determine base and end offset.
     // --------------------------------------------------------
     int base = 47;
-
-
-    // Determine end offset. (If flags should be a tab or not).
-    // --------------------------------------------------------
     int endoff;
-    if (winY-5 > 8) {
+    if (winX - base - 17 > 32) {
         endoff = winX - 17;
         drawFlags();}
-    else {
-        endoff = winX;
-        tabs.push_back("flags");}
+    else endoff = winX;
 
 
     // Draw contents of tab window.
     // --------------------------------------------------------
     switch (activeTab)
     {
-        case 0:
-            drawTabSRAM(base, endoff);
-            // drawTabRegisters(base, endoff);
-            break;
-
-        case 1:
-            drawTabSRAM(base, endoff);
-            // drawTabStack(base, endoff);
-            break;
+        case 0: drawTabBasicView(base, endoff); break;
+        case 1: drawTabSRAM(base, endoff); break;
+        case 2: drawTabStack(base, endoff); break;
         
         // Default should never be reached.
         default: break;
@@ -485,10 +478,9 @@ void GUIrun()
     // ------------------------------------------------------
     use_default_colors();
     start_color();
-    init_pair(0, 7, 0);
+    init_pair(0, 0, 0);
     init_pair(1, 0, 7);
-    init_pair(2, 1, 2);
-    init_pair(3, 8, 0);
+    init_pair(2, 8, 0);
 
     // Do intial screen update to draw interface for the first time.
     // ------------------------------------------------------

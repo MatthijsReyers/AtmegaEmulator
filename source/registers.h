@@ -3,29 +3,16 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include <map>
 #include <iostream>
 
-// Status register bits
-// ========================================
-bool flagC; // Carry Flag
-bool flagZ; // Zero Flag
-bool flagN; // Negative Flag
-bool flagV; // Two’s complement overflow indicator
-bool flagS; // N ⊕ V, For signed tests
-bool flagH; // Half Carry Flag
-bool flagT; // Transfer bit used by BLD and BST instructions
-bool flagI; // Global Interrupt Enable/Disable Flag
 
-
-// Register struct/class
-// ========================================
+// Register struct/class.
+// ===========================================================
 class reg
 {
     private:
-        int mainBits = 0;
+        short mainBits = 0;
         std::string name;
-
 
     public:
         // Constructor.
@@ -33,16 +20,17 @@ class reg
 
         // Getters.
         auto getValue() {return this->mainBits;}
-        auto getNthBit(int n) {return (0b01 & (mainBits >> n));}
+        auto getNthBit(short n) {return (bool)(0b01 & (mainBits >> n));}
         auto getName() {return this->name;}
 
         // Setters.
-        void setValue(short u) {this->mainBits = u;}
+        void setValue(short u) {this->mainBits = u & 0b011111111;}
+        void setNthBit(short n, short b) {this->mainBits = (mainBits & ((0b11111111011111111 >> (8-n))) | ((0b01 & b) << n) & 0b11111111);}
 };
 
 
-//
-// ========================================
+// Functions for initializing and resetting the registers.
+// ===========================================================
 std::vector<reg> registers;
 void initRegisters()
 {
@@ -133,10 +121,13 @@ void initRegisters()
 
     registers.push_back(reg("SPMCSR")); // 0x57
 
-    // Reserved registers. (0x38 - 0x3A).
+    // Reserved registers. (0x38 - 0x3C).
     // --------------------------------------------------------
     for (int i = 0; i < 5; i++) registers.push_back(reg(reserved));
 
+    registers.push_back(reg("SPL"));
+    registers.push_back(reg("SPH"));
+    registers.push_back(reg("SREG"));   // 0x3F
 }
 
 void resetRegisters()
@@ -146,3 +137,4 @@ void resetRegisters()
         item.setValue(0);
     }
 }
+

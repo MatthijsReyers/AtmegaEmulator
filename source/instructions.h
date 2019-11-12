@@ -8,38 +8,38 @@
 #include <opcode.h>
 #include <program.h>
 #include <registers.h>
-
-#include <iostream>
-#include <fstream>
+#include <flags.h>
 
 // Add with carry.
 void ADC(opcode &code) 
 {
     // Parse opcode.
-    short toAdd = 16 + ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 4));
-    short toAddTo = 16 + ((code.getBits() & 0b0000000111110000) >> 4);
+    short toAdd = ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 4));
+    short toAddTo = ((code.getBits() & 0b0000000111110000) >> 4);
 
     // Calculate result and add to register.
-    int result = registers[toAddTo].getValue() + registers[toAdd].getValue();
-    if (flagC) result++;
-    registers[toAddTo].setValue((short)result);
+    int previousValue = registers[toAddTo].getValue();
+    int result = previousValue + registers[toAdd].getValue();
+    if (flags.getC()) result++;
+    registers[toAddTo].setValue(result);
 
-    // Half carry flag.
-    flagH = (result >= 16);
+    // H - Half carry flag.
+    // flags.setH(result >= 16);
 
     // S
 
 
     // V
 
+
     // N
+    flags.setN(registers[toAddTo].getNthBit(7));
 
+    // Z - Zero flag.
+    flags.setZ(result == 0);
 
-    // Z zero flag.
-    flagZ = (result == 0);
-
-    // C carry flag.
-    flagC = (result > 65536);
+    // C - carry flag.
+    flags.setC(result > 255);
     
     // Increment program counter.
     programCounter++;
@@ -62,7 +62,7 @@ void ADD(opcode &code)
     registers[toAddTo].setValue((short)result);
 
     // Half carry flag.
-    flagH = (result >= 16);
+    // flags.setH(result >= 16);
 
     // S
 
@@ -70,13 +70,13 @@ void ADD(opcode &code)
     // V
 
     // N
-
+    flags.setN(registers[toAddTo].getNthBit(7));
 
     // Z zero flag.
-    flagZ = (result == 0);
+    flags.setZ(result == 0);
 
     // C carry flag.
-    flagC = (result > 65536);
+    flags.setC(result > 255);
     
     // Increment program counter.
     programCounter++;
@@ -85,6 +85,12 @@ void ADD(opcode &code)
     std::stringstream ss;
     ss << "add  " << registers[toAddTo].getName() << ", " << registers[toAdd].getName();
     code.assembly = ss.str();
+}
+
+// Add immediate to Word.
+void ADIW(opcode &code)
+{
+    
 }
 
 // Logical AND.
@@ -100,13 +106,13 @@ void AND(opcode &code)
 
     // S
 
-    // V
-    flagV = false;
+    // V (cleared)
+    flags.setV(0);
 
     // N
 
-    // Z zeroflag
-    flagZ = (result == 0);
+    // Z - Zeroflag
+    flags.setZ(result == 0);
 
     // Increment program counter.
     programCounter++;
@@ -126,18 +132,18 @@ void ANDI(opcode &code)
 
     // Calcuate result and add to register.
     int result = registers[toAndTo].getValue() & toAnd;
-    registers[toAndTo].setValue((short)result);
+    registers[toAndTo].setValue(result);
 
     // S
 
     // V (cleared)
-    flagV = false;
+    flags.setV(0);
 
-    // N negativeFlag is bit 7.
-    flagN = registers[toAndTo].getNthBit(7);
+    // N - NegativeFlag is bit 7.
+    flags.setN(registers[toAndTo].getNthBit(7));
 
-    // Z zeroflag
-    flagZ = (result == 0);
+    // Z - Zeroflag
+    flags.setZ(result == 0);
 
     // Increment program counter.
     programCounter++;
@@ -155,7 +161,7 @@ void ASR(opcode &code)
     short toShift = (code.getBits() & 0b0000000111110000) >> 4;
 
     // Carry flag is set to Bit 0.
-    flagC = registers[toShift].getNthBit(0);
+    flags.setC(registers[toShift].getNthBit(0));
 
     // Bit 7 stays bit 7.
     short bit7 = registers[toShift].getNthBit(7);
@@ -168,11 +174,11 @@ void ASR(opcode &code)
 
     // V
 
-    // Negative flag is bit 7.
-    flagN = registers[toShift].getNthBit(7);
+    // N - Negative flag is bit 7.
+    flags.setN(registers[toShift].getNthBit(7));
 
-    // Z = Zero flag
-    flagZ = (result == 0);
+    // Z - Zero flag
+    flags.setZ(result == 0);
 
     // Increment program counter.
     programCounter++;
@@ -189,18 +195,8 @@ void BCLR(opcode &code)
     // Parse opcode.
     short flagNum = ((code.getBits() & 0b0000000001110000) >> 4);
 
-    switch (flagNum)
-    {
-        case 0: flagC = false; break;
-        case 1: flagZ = false; break;
-        case 2: flagN = false; break;
-        case 3: flagV = false; break;
-        case 4: flagS = false; break;
-        case 5: flagH = false; break;
-        case 6: flagT = false; break;
-        case 7: flagI = false; break; 
-        default: printf("MASSIVE ERROR!"); break;
-    }
+    // Change the bit in SREG
+    registers[0x5F].setNthBit(flagNum,false);
 
     // Increment program counter.
     programCounter++;
@@ -208,6 +204,25 @@ void BCLR(opcode &code)
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
     ss << "bclr " << flagNum;
+    code.assembly = ss.str();
+}
+
+// Bit load from the T flag in SREG to a bit in register.
+void BLD(opcode &code)
+{
+    // Parse opcode.
+    short regToLoad = (code.getBits() & 0b00111110000) >> 4);
+    short bitToLoad = (code.getBits() & 0b0111);
+
+    //
+    registers[regToLoad].setNthBit(bitToLoad, flags.getT());
+
+    // Increment program counter.
+    programCounter++;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "bld r" << regToLoad << ", " << bitToLoad;
     code.assembly = ss.str();
 }
 
@@ -222,24 +237,9 @@ void BRBC(opcode &code)
     if (((jumpAmount & 0b01000000) >> 6) == 1) jumpAmount = (jumpAmount & 0b00111111) * -1;
     else jumpAmount = (jumpAmount & 0b00111111) - 1;
 
-    bool flagState;
-    switch (flagNum)
-    {
-        case 0: flagState = flagC; break;
-        case 1: flagState = flagZ; break;
-        case 2: flagState = flagN; break;
-        case 3: flagState = flagV; break;
-        case 4: flagState = flagS; break;
-        case 5: flagState = flagH; break;
-        case 6: flagState = flagT; break;
-        case 7: flagState = flagI; break; 
-        default: printf("MASSIVE ERROR!"); break;
-    }
-
-    if (!flagState)
-    {
-        programCounter = programCounter + jumpAmount;
-    }
+    // Jump if needed.
+    bool flagState =  (bool)registers[0x5F].getNthBit(flagNum);
+    if (!flagState) programCounter = programCounter + jumpAmount;
 
     // Increment program counter.
     programCounter++;
@@ -247,6 +247,30 @@ void BRBC(opcode &code)
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
     ss << "brbc " << flagNum << ", " << jumpAmount;
+    code.assembly = ss.str();
+}
+
+// Branch if Bit in SREG is Set.
+void BRBS(opcode &code)
+{
+    // Parse opcode.
+    short flagNum = ((code.getBits() & 0b0000000000000111));
+    short jumpAmount = ((code.getBits() & 0b0000001111111000) >> 3);
+    
+    // Convert jump amount.
+    if (((jumpAmount & 0b01000000) >> 6) == 1) jumpAmount = (jumpAmount & 0b00111111) * -1;
+    else jumpAmount = (jumpAmount & 0b00111111) - 1;
+
+    // Jump if needed.
+    bool flagState =  (bool)registers[0x5F].getNthBit(flagNum);
+    if (flagState) programCounter = programCounter + jumpAmount;
+
+    // Increment program counter.
+    programCounter++;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "brbs " << flagNum << ", " << jumpAmount;
     code.assembly = ss.str();
 }
 
@@ -260,7 +284,7 @@ void BRNE(opcode &code)
     if (code.getNthBit(9)) toJump = (((~toJump) & 0b00111111) + 1) * -1;
 
     // Do the actual jumping.
-    if (!flagZ) programCounter = programCounter + 1 + toJump;
+    if (!flags.getZ()) programCounter = programCounter + 1 + toJump;
     else programCounter++;
 
     // Make a string for translated assembly and put in optcode.
@@ -305,10 +329,10 @@ void LSR(opcode &code)
     short toShift = ((code.getBits() & 0b0000000111110000) >> 4);
 
     // Carry is set if least significant bit of register is set before shift.
-    flagC = registers[toShift].getNthBit(0);
+    flags.setC(registers[toShift].getNthBit(0));
 
     // Negative flag
-    flagN = 0;
+    flags.setN(false);
 
     // Shift bits in register.
     short shifted = registers[toShift].getValue() >> 1 & 0b0111111111111111;
@@ -319,7 +343,7 @@ void LSR(opcode &code)
     // S
 
     // Zero flag (determined after shift).
-    flagZ = (registers[toShift].getValue() == 0);
+    flags.setZ(registers[toShift].getValue() == 0);
 
     // Increment program counter.
     programCounter++;

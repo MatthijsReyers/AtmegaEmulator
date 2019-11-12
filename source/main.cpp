@@ -8,6 +8,7 @@
 
 #include <program.h>
 #include <registers.h>
+#include <flags.h>
 #include <instructions.h>
 #include <opParse.h>
 #include <interface.h>
@@ -26,6 +27,7 @@ int main(int argc, char* argv[])
     
     programCounter = 0;
     resetRegisters();
+    resetFlags();
 
     GUIrun();
 }
