@@ -1,5 +1,6 @@
-.device atmega168       ; message to assembler not an instruction.
+; .device atmega168       ; message to assembler not an instruction.
 again:
+ldi     r22, 200        
 ldi     r16, 0          ; 1110 0000 0010 0011
 ldi     r17, 4          ; 1110 0000 0001 0000
 ldi     r18, 9          ; 1110 0000 0010 0011

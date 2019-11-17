@@ -27,14 +27,39 @@ auto parseOpcode(opcode code, node *currentRoot)
     else if ((code.getBits() >> 15) & 0b01 == 1)
     {
         if ((*currentRoot).one) return parseOpcode((code.getBits() << 1), (*currentRoot).one);
-        else throw "this instruction does not exist";
+        else throw "The provided hex file contains an instruction not supported by this program.";
     }
 
     // Case current bit == 0.
     else {
         if ((*currentRoot).zero) return parseOpcode((code.getBits() << 1), (*currentRoot).zero);
-        else throw "this instruction does not exist";
+        else throw "The provided hex file contains an instruction not supported by this program.";
     }
+}
+
+
+
+// Special function for identifying instructions that
+// don't work in the search tree.
+// ===================================================
+void SPECIAL(opcode &code)
+{
+    // Deal with break statement.
+    if (code.getBits() == 0b1001010110011000) BREAK(code);
+    
+    // Deal with 32 bit instructions.
+    else if (code.is32bit)
+    {
+        CALL(code);
+    }
+
+    else // Deal with 16 bit instructions.
+    {
+        if ((code.getBits() & 0b1111111000001111) == 0b1001010000000101) ASR(code);
+        else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000110) LSR(code);
+        else if ((code.getBits() & 0b1111111110001111) == 0b1001010010001000) BCLR(code);
+        else if ((code.getBits() & 0b1111111110001111) == 0b1001010000001000) BSET(code);
+    }    
 }
 
 
@@ -78,50 +103,24 @@ void addopcode(void(& instruct)(opcode &code), int opcode, int codeLength)
 
 void initSearchTree()
 {
-    try {
-        addopcode(SPECIAL, 0b1001010, 7);
+    addopcode(SPECIAL, 0b1001010, 7);
 
-        addopcode(ADC, 0b000111, 6);
-        addopcode(ADD, 0b000011, 6);
-        addopcode(ADIW,0b10010110, 8);
-        addopcode(AND, 0b001000, 6);
-        addopcode(ANDI,0b0111, 4);
+    addopcode(ADC, 0b000111, 6);
+    addopcode(ADD, 0b000011, 6);
+    addopcode(ADIW,0b10010110, 8);
+    addopcode(AND, 0b001000, 6);
+    addopcode(ANDI,0b0111, 4);
 
-        addopcode(BLD, 0b1111100, 7);
-        addopcode(BRBC,0b111101, 6);
-        addopcode(BRBS,0b111100, 6);
-        addopcode(BST, 0b1111101, 7);
+    addopcode(BLD, 0b1111100, 7);
+    addopcode(BRBC,0b111101, 6);
+    addopcode(BRBS,0b111100, 6);
+    addopcode(BST, 0b1111101, 7);
 
-        addopcode(LDI, 0b1110, 4);
-        addopcode(SBRC,0b1111110, 7);
-        addopcode(RJMP,0b1100, 4);
-    }
-    catch (const char* err) {std::cout << "ERROR: " << err << "\n"; exit(1);}
+    addopcode(LDI, 0b1110, 4);
+    addopcode(SBRC,0b1111110, 7);
+    addopcode(RJMP,0b1100, 4);
 }
 
 
-// Special function for identifying instructions that
-// don't work in the search tree.
-// ===================================================
-void SPECIAL(opcode &code)
-{
-    // Deal with break statement.
-    if (code.getBits() == 0b1001010110011000) BREAK(code);
-    
-    // Deal with 32 bit instructions.
-    else if (code.is32bit)
-    {
-        CALL(code);
-    }
-
-    else // Deal with 16 bit instructions.
-    {
-        if ((code.getBits() & 0b1111111000001111) == 0b1001010000000101) ASR(code);
-        else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000110) LSR(code);
-        else if ((code.getBits() & 0b1111111110001111) == 0b1001010010001000) BCLR(code);
-        else if ((code.getBits() & 0b1111111110001111) == 0b1001010000001000) BSET(code);
-
-    }    
-}
 
 

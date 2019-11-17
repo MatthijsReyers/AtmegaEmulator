@@ -496,8 +496,11 @@ void GUIrun()
         // ----------------------------------------
         if (programCounter == program.size())
         {
-            msgBox("The program has finished.");
-            exit(0);
+            std::stringstream ss;
+            ss << programCounter;
+            msgBox(ss.str());
+            // msgBox("The program has finished.");
+            running = false;
         }
 
         // Input parsing.

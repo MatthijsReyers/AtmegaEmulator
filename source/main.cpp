@@ -15,19 +15,29 @@
 
 int main(int argc, char* argv[])
 {
-    initRegisters();
     initSearchTree();
+    initRegisters();
 
-    loadprogram("testing/progBonus.hex"); 
-    for (int i = 0; i < program.size(); i++)
+    try 
     {
-        void(* func)(opcode &code) = parseOpcode(program[i], &SearchTree);
-        (* func)(program[i]);
+        loadprogram("tests/subRoutines/subRoutines.hex");
+        
+        // for (int i = 0; i < program.size(); i++)
+        // {
+        //     void(* func)(opcode &code) = parseOpcode(program[i], &SearchTree);
+        //     (* func)(program[i]);
+        // }
+        
+        programCounter = 0;
+        resetRegisters();
+        resetFlags();
+
+        GUIrun();
     }
     
-    programCounter = 0;
-    resetRegisters();
-    resetFlags();
-
-    GUIrun();
+    catch (char const* msg) 
+    {
+        std::cout << "ERROR: " << msg << std::endl;
+        exit(1);
+    }
 }

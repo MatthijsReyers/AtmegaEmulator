@@ -334,6 +334,11 @@ void BST(opcode &code)
 void CALL(opcode &code)
 {
     programCounter++;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "call " << 999;
+    code.assembly = ss.str();
 }
 
 // Clear bit in I/O register.
@@ -448,5 +453,5 @@ void SBRC(opcode &code)
 
 void SLEEP(opcode &code)
 {
-    counter++;
+    programCounter++;
 }
