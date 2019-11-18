@@ -407,10 +407,28 @@ void LSR(opcode &code)
     code.assembly = ss.str();
 }
 
+// Relative Call to Subroutine
+void RCALL(opcode &code)
+{
+    // Parse opcode.
+    int toJump = (code.getBits() & 0b0000011111111111);
+    if (code.getNthBit(11)) toJump = ((~toJump & 0b011111111111) + 1)*-1;
+
+    // Update program counter.
+    programCounter = programCounter + 1 + toJump;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "rcall " << toJump;
+    code.assembly = ss.str();
+}
+
 // Return from subroutine.
 void RET(opcode &code)
 {
+    programCounter++;
 
+    code.assembly = std::string("ret");
 }
 
 // Relative jump.

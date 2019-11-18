@@ -44,18 +44,17 @@ auto parseOpcode(opcode code, node *currentRoot)
 // ===================================================
 void SPECIAL(opcode &code)
 {
-    // Deal with break statement.
-    if (code.getBits() == 0b1001010110011000) BREAK(code);
-    
     // Deal with 32 bit instructions.
-    else if (code.is32bit)
+    if (code.is32bit) 
     {
         CALL(code);
     }
 
     else // Deal with 16 bit instructions.
     {
-        if ((code.getBits() & 0b1111111000001111) == 0b1001010000000101) ASR(code);
+        if (code.getBits() == 0b1001010110011000) BREAK(code);
+        else if (code.getBits() == 0b1001010100001000) RET(code);
+        else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000101) ASR(code);
         else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000110) LSR(code);
         else if ((code.getBits() & 0b1111111110001111) == 0b1001010010001000) BCLR(code);
         else if ((code.getBits() & 0b1111111110001111) == 0b1001010000001000) BSET(code);
@@ -103,7 +102,7 @@ void addopcode(void(& instruct)(opcode &code), int opcode, int codeLength)
 
 void initSearchTree()
 {
-    addopcode(SPECIAL, 0b1001010, 7);
+    addopcode(SPECIAL,0b1001010, 7);
 
     addopcode(ADC, 0b000111, 6);
     addopcode(ADD, 0b000011, 6);
@@ -118,6 +117,7 @@ void initSearchTree()
 
     addopcode(LDI, 0b1110, 4);
     addopcode(SBRC,0b1111110, 7);
+    addopcode(RCALL,0b1101, 4);
     addopcode(RJMP,0b1100, 4);
 }
 

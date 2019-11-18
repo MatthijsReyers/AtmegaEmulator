@@ -11,7 +11,7 @@ struct opcode
     std::string assembly;
 
     // Constructor.
-    opcode(int code) {this->mainbytes = code;}
+    opcode(int code) {this->mainbytes = code & 0b01111111111111111;}
 
     // Get nth bit function.
     int getNthBit(int n) {return this->mainbytes >> n & 0b01;}

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <settings.h>
+
 #include <string>
 #include <sstream>
 #include <vector>
@@ -26,6 +28,7 @@ class reg
         // Setters.
         void setValue(short u) {this->mainBits = u & 0b011111111;}
         void setNthBit(short n, short b) {this->mainBits = (mainBits & ((0b11111111011111111 >> (8-n))) | ((0b01 & b) << n) & 0b11111111);}
+        void setName(std::string newName){this->name = newName;}
 };
 
 
@@ -121,13 +124,42 @@ void initRegisters()
 
     registers.push_back(reg("SPMCSR")); // 0x57
 
-    // Reserved registers. (0x38 - 0x3C).
+    // Reserved registers. (0x58 - 0x5C).
     // --------------------------------------------------------
     for (int i = 0; i < 5; i++) registers.push_back(reg(reserved));
 
-    registers.push_back(reg("SPL"));
-    registers.push_back(reg("SPH"));
-    registers.push_back(reg("SREG"));   // 0x3F
+    registers.push_back(reg("SPL"));    // 0x5D
+    registers.push_back(reg("SPH"));    // 0x5E
+    registers.push_back(reg("SREG"));   // 0x5F
+
+    // 160 Ext I/O Reg. (Not used on most adruino's).
+    // --------------------------------------------------------
+    for (int i = 0; i < 160; i++)
+    {
+        registers.push_back(reg(reserved));
+    }
+
+    // Internal SRAM. (Size depends on chip's model).
+    // --------------------------------------------------------
+    switch (settings.chip)
+    {
+        // Atmega 328P (2048 bytes of internal SRAM)
+        default:
+        case 0:
+            for (int i = 0x0100; i <= 0x08FF; i++) registers.push_back(reg(reserved));
+            break;
+        
+        // Atmega 168PA and 88PA (1024 bytes of internal SRAM)
+        case 1:
+        case 2:
+            for (int i = 0x0100; i <= 0x04FF; i++) registers.push_back(reg(reserved));
+            break;
+
+        // Atmega 48PA (512 bytes of internal SRAM)
+        case 3:
+            for (int i = 0x0100; i <= 0x02FF; i++) registers.push_back(reg(reserved));
+            break;
+    }
 }
 
 void resetRegisters()

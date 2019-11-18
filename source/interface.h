@@ -271,40 +271,40 @@ void drawTabSRAM(int base, int end)
 
 void drawTabStack(int base, int end)
 {
-    int winX, winY;
-    getmaxyx(stdscr, winY, winX);
+    // int winX, winY;
+    // getmaxyx(stdscr, winY, winX);
 
-    std::stringstream ss;
+    // std::stringstream ss;
 
-    // Create message about elements on the stack.
-    ss << "Element on stack: " << stack.size() << " ";
-    std::string stackElementsMsg = ss.str();
-    ss.str("");
+    // // Create message about elements on the stack.
+    // ss << "Element on stack: " << stack.size() << " ";
+    // std::string stackElementsMsg = ss.str();
+    // ss.str("");
 
-    // Create message about the size of the stack.
-    ss << "Size of stack: " << (float)stack.size() * 0.016 << " kilobytes";
-    std::string stackSizeMsg = ss.str();
-    ss.str("");
+    // // Create message about the size of the stack.
+    // ss << "Size of stack: " << (float)stack.size() * 0.016 << " kilobytes";
+    // std::string stackSizeMsg = ss.str();
+    // ss.str("");
 
-    // Place messages and line.
-    for (int i = 2; i < end-base-2; i++) mvaddstr(4, base+i, "─");
-    mvaddstr(3, base+2, stackElementsMsg.c_str());
-    mvaddstr(3, base+2+stackElementsMsg.length(), "│ ");
-    mvaddstr(4, base+2+stackElementsMsg.length(), "┴");
-    mvaddstr(3, base+2+stackElementsMsg.length()+2, stackSizeMsg.c_str());
+    // // Place messages and line.
+    // for (int i = 2; i < end-base-2; i++) mvaddstr(4, base+i, "─");
+    // mvaddstr(3, base+2, stackElementsMsg.c_str());
+    // mvaddstr(3, base+2+stackElementsMsg.length(), "│ ");
+    // mvaddstr(4, base+2+stackElementsMsg.length(), "┴");
+    // mvaddstr(3, base+2+stackElementsMsg.length()+2, stackSizeMsg.c_str());
 
-    int counter = 0;
-    for (short layer : stack)
-    {
-        std::stringstream ss;
-        int memaddr = 4351 - counter*16;
-        if (memaddr < 16) ss << "000";
-        else if (memaddr < 256) ss << "00";
-        else if (memaddr < 4096) ss << "0";
-        ss << std::hex << memaddr << " " << std::bitset<16>(layer);
-        mvaddstr(5+counter, base+2, ss.str().c_str());
-        counter++;
-    }
+    // int counter = 0;
+    // for (short layer : stack)
+    // {
+    //     std::stringstream ss;
+    //     int memaddr = 4351 - counter*16;
+    //     if (memaddr < 16) ss << "000";
+    //     else if (memaddr < 256) ss << "00";
+    //     else if (memaddr < 4096) ss << "0";
+    //     ss << std::hex << memaddr << " " << std::bitset<16>(layer);
+    //     mvaddstr(5+counter, base+2, ss.str().c_str());
+    //     counter++;
+    // }
 }
 
 void drawTabs()
@@ -496,10 +496,7 @@ void GUIrun()
         // ----------------------------------------
         if (programCounter == program.size())
         {
-            std::stringstream ss;
-            ss << programCounter;
-            msgBox(ss.str());
-            // msgBox("The program has finished.");
+            msgBox("The program has finished.");
             running = false;
         }
 
@@ -544,11 +541,7 @@ void GUIrun()
             case KEY_DOWN:
                 // running = false;
                 break;
-
-            case 'd':
-                stack.push_back(0b0001);
-                break;
-
+                
             default:
                 break;
         }
