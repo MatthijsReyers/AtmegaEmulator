@@ -215,47 +215,70 @@ void drawTabSRAM(int base, int end)
     int winX, winY;
     getmaxyx(stdscr, winY, winX);
 
+    // General purpose stringstream.
+    std::stringstream ss;
+
+    // Create message about size of sram.
+    ss << "SRAM size: " << (registers.size() * 0.016) << " kilobytes ";
+    std::string sramSizeMsg = ss.str();
+    ss.str("");
+
+    // Create message about size of extended sram.
+    ss << "Internal SRAM size: " << (registers.size()-0x0100) * 0.016 << " kilobytes ";
+    std::string interSizeMsg = ss.str();
+    ss.str("");
+
+    // Place messages and line.
+    for (int i = 2; i < end-base-2; i++) mvaddstr(4, base+i, "═");
+    mvaddstr(3, base+2, sramSizeMsg.c_str());
+    mvaddstr(3, base+2+sramSizeMsg.length(), "║ ");
+    mvaddstr(4, base+2+sramSizeMsg.length(), "╩");
+    mvaddstr(3, base+2+sramSizeMsg.length()+2, interSizeMsg.c_str());
+
     // Figure out how many collumns/rows to draw.
     int collumns = (end - base - 1) / 32;
-    int rows = winY - 7;
+    int rows = winY - 9 ;
 
     // Draw every collumn.
-    std::stringstream ss;
     int address = 0;
     for (int c = 0; c < collumns; c++)
     {
+        // Quick fix.
+        if (c != collumns - 1) mvaddstr(4, base+32, "╦");
+
         // Draw all vertical lines.
-        for (int y = 0; y < winY-5; y++)
+        for (int y = 0; y < winY-7; y++)
         {
-            mvaddstr(3+y, base+10, "│");
-            mvaddstr(3+y, base+21, "│");
-            if (c != collumns - 1) mvaddstr(3+y, base+32, "║");
+            mvaddstr(5+y, base+10, "│");
+            mvaddstr(5+y, base+21, "│");
+            if (c != collumns - 1) mvaddstr(5+y, base+32, "║");
         }
         
         // Draw table header.
-        mvaddstr(3, base+2, "Address │ Reg name │ Contents");
-        mvaddstr(4, base+2, "────────┼──────────┼─────────");
+        mvaddstr(5, base+2, "Address │ Reg name │ Contents");
+        mvaddstr(6, base+2, "────────┼──────────┼─────────");
 
         // Draw all the SRAM contents.
         for (int i = 0; i < rows && address < registers.size(); i++)
         {
             // Base address for every row.
             attron(COLOR_PAIR(2));
-            mvaddstr(5+i, base+2, "0x00000");
+            mvaddstr(7+i, base+2, "0x00000");
             attroff(COLOR_PAIR(2));
 
             // Memmory address.
             ss.str(""); ss << std::hex << address;
-            mvaddstr(5+i, base+9-ss.str().length(), ss.str().c_str());
+            mvaddstr(7+i, base+9-ss.str().length(), ss.str().c_str());
 
             // Row name.
             if (registers[address].getName() == "reserved") attron(COLOR_PAIR(2));
-            mvaddstr(5+i, base+12, registers[address].getName().c_str());
+            if (registers[address].getName() == "empty   ") attron(COLOR_PAIR(2));
+            mvaddstr(7+i, base+12, registers[address].getName().c_str());
             attroff(COLOR_PAIR(2));
 
             // Row contents.
             ss.str(""); ss << std::bitset<8>(registers[address].getValue());
-            mvaddstr(5+i, base+23, ss.str().c_str());
+            mvaddstr(7+i, base+23, ss.str().c_str());
 
             // Increment address.
             address++;
@@ -271,40 +294,94 @@ void drawTabSRAM(int base, int end)
 
 void drawTabStack(int base, int end)
 {
-    // int winX, winY;
-    // getmaxyx(stdscr, winY, winX);
+    // Get the size of the terminal.
+    int winX, winY;
+    getmaxyx(stdscr, winY, winX);
 
-    // std::stringstream ss;
+    // General purpose stringstream.
+    std::stringstream ss;
 
-    // // Create message about elements on the stack.
-    // ss << "Element on stack: " << stack.size() << " ";
-    // std::string stackElementsMsg = ss.str();
-    // ss.str("");
+    // Create message about elements on the stack.
+    ss << "Items on stack: " << stack.getItems() << "/" << (registers.size() - 0x0100) << " ";
+    std::string stackElementsMsg = ss.str();
+    ss.str("");
 
-    // // Create message about the size of the stack.
-    // ss << "Size of stack: " << (float)stack.size() * 0.016 << " kilobytes";
-    // std::string stackSizeMsg = ss.str();
-    // ss.str("");
+    // Create message about the size of the stack.
+    ss << "Stack size: " << (float)(stack.getItems()) * 0.016 << " kilobytes ";
+    std::string stackSizeMsg = ss.str();
+    ss.str("");
 
-    // // Place messages and line.
-    // for (int i = 2; i < end-base-2; i++) mvaddstr(4, base+i, "─");
-    // mvaddstr(3, base+2, stackElementsMsg.c_str());
-    // mvaddstr(3, base+2+stackElementsMsg.length(), "│ ");
-    // mvaddstr(4, base+2+stackElementsMsg.length(), "┴");
-    // mvaddstr(3, base+2+stackElementsMsg.length()+2, stackSizeMsg.c_str());
+    // Create message about stack pointer.
+    ss << "Pointer addr: 0x0" << std::hex << stack.getPointer() << "      ";
+    std::string stackPointMsg = ss.str();
+    ss.str("");
 
-    // int counter = 0;
-    // for (short layer : stack)
-    // {
-    //     std::stringstream ss;
-    //     int memaddr = 4351 - counter*16;
-    //     if (memaddr < 16) ss << "000";
-    //     else if (memaddr < 256) ss << "00";
-    //     else if (memaddr < 4096) ss << "0";
-    //     ss << std::hex << memaddr << " " << std::bitset<16>(layer);
-    //     mvaddstr(5+counter, base+2, ss.str().c_str());
-    //     counter++;
-    // }
+    // Place messages and line.
+    for (int i = 2; i < end-base-2; i++) mvaddstr(4, base+i, "═");
+    mvaddstr(3, base+2, stackSizeMsg.c_str());
+    mvaddstr(3, base+2+stackSizeMsg.length(), "║ ");
+    mvaddstr(4, base+2+stackSizeMsg.length(), "╩");
+    mvaddstr(3, base+2+stackSizeMsg.length()+2, stackElementsMsg.c_str());
+    mvaddstr(3, base+2+stackSizeMsg.length()+2+stackElementsMsg.length(), "║ ");
+    mvaddstr(4, base+2+stackSizeMsg.length()+2+stackElementsMsg.length(), "╩");
+    mvaddstr(3, base+2+stackSizeMsg.length()+2+stackElementsMsg.length()+2, "                      ");
+    mvaddstr(3, base+2+stackSizeMsg.length()+2+stackElementsMsg.length()+2, stackPointMsg.c_str());
+
+    // Figure out how many collumns/rows to draw.
+    int collumns = (end - base - 1) / 32;
+    int rows = winY - 9;
+
+    // Draw every collumn.
+    int address = registers.size();
+    for (int c = 0; c < collumns; c++)
+    {
+        // Quick fix.
+        if (c != collumns - 1) mvaddstr(4, base+32, "╦");
+
+        // Draw all vertical lines.
+        for (int y = 0; y < winY-7; y++)
+        {
+            mvaddstr(5+y, base+10, "│");
+            mvaddstr(5+y, base+21, "│");
+            if (c != collumns - 1) mvaddstr(5+y, base+32, "║");
+        }
+        
+        // Draw table header.
+        mvaddstr(5, base+2, "Address │ Use      │ Contents");
+        mvaddstr(6, base+2, "────────┼──────────┼─────────");
+
+        // Draw all the SRAM contents.
+        for (int i = 0; i < rows && address > 0x0100; i++)
+        {
+            // Base address for every row.
+            attron(COLOR_PAIR(2));
+            mvaddstr(7+i, base+2, "0x00000");
+            attroff(COLOR_PAIR(2));
+
+            // Memmory address.
+            ss.str(""); ss << std::hex << address;
+            mvaddstr(7+i, base+9-ss.str().length(), ss.str().c_str());
+
+            // Row name.
+            if (registers[address].getName() == "reserved") attron(COLOR_PAIR(2));
+            if (registers[address].getName() == "empty   ") attron(COLOR_PAIR(2));
+            mvaddstr(7+i, base+12, registers[address].getName().c_str());
+            attroff(COLOR_PAIR(2));
+
+            // Row contents.
+            ss.str(""); ss << std::bitset<8>(registers[address].getValue());
+            mvaddstr(7+i, base+23, ss.str().c_str());
+
+            // Increment address.
+            address--;
+        }
+
+        // Increase base offset for next collumn.
+        base = base + 32;
+
+        // Check if we really need more collumns.
+        if (address >= registers.size()) break;// c = collumns;
+    }
 }
 
 void drawTabs()
@@ -319,8 +396,9 @@ void drawTabs()
     // ------------------------------------------------------
     tabs.clear();
     tabs.push_back("Basic view");
-    // tabs.push_back("stack");
     tabs.push_back("SRAM");
+    // tabs.push_back("EPROM");
+    tabs.push_back("Stack");
     tabs.push_back("I/O");
     
 
@@ -510,13 +588,30 @@ void GUIrun()
                 break;
 
             case '\n': // KEY_ENTER
-                func = parseOpcode(program[programCounter], &SearchTree);
-                func(program[programCounter]);
+                if (programCounter < program.size() && programCounter >= 0){
+                    try {
+                        func = parseOpcode(program[programCounter], &SearchTree);
+                        func(program[programCounter]);}
+                    catch (const char* msg) {msgBox(std::string(msg));}}
+                else {
+                    msgBox("The program counter points to a place outside the program.");
+                    key = getch();
+                    if (key == 'r'){
+                        programCounter = 0;
+                        resetRegisters();
+                        resetFlags();
+                        resetStack();}
+                    else {
+                        running = false;
+                    }
+                }
                 break;
             
             case 'r': // RESET
                 programCounter = 0;
                 resetRegisters();
+                resetFlags();
+                resetStack();
                 break;
 
             case KEY_RIGHT:

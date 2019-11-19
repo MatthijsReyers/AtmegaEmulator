@@ -38,6 +38,7 @@ std::vector<reg> registers;
 void initRegisters()
 {
     std::string reserved = "reserved";
+    std::string empty = "empty";
 
     // Create the general purpose registers (r0-r31).
     // --------------------------------------------------------
@@ -146,18 +147,18 @@ void initRegisters()
         // Atmega 328P (2048 bytes of internal SRAM)
         default:
         case 0:
-            for (int i = 0x0100; i <= 0x08FF; i++) registers.push_back(reg(reserved));
+            for (int i = 0x0100; i < 0x08FF; i++) registers.push_back(reg(empty));
             break;
         
         // Atmega 168PA and 88PA (1024 bytes of internal SRAM)
         case 1:
         case 2:
-            for (int i = 0x0100; i <= 0x04FF; i++) registers.push_back(reg(reserved));
+            for (int i = 0x0100; i < 0x04FF; i++) registers.push_back(reg(empty));
             break;
 
         // Atmega 48PA (512 bytes of internal SRAM)
         case 3:
-            for (int i = 0x0100; i <= 0x02FF; i++) registers.push_back(reg(reserved));
+            for (int i = 0x0100; i < 0x02FF; i++) registers.push_back(reg(empty));
             break;
     }
 }

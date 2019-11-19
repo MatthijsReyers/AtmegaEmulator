@@ -53,9 +53,9 @@ int main(int argc, char* argv[])
             }
             programCounter = 0;
             resetRegisters();
-            resetStack();
             resetFlags();
-        }     
+            resetStack();
+        }
         
         // Begin the UI/userinput loop.
         GUIrun();

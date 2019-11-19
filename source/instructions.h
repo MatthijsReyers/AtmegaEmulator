@@ -8,6 +8,7 @@
 #include <opcode.h>
 #include <program.h>
 #include <registers.h>
+#include <stack.h>
 #include <flags.h>
 
 
@@ -414,6 +415,13 @@ void RCALL(opcode &code)
     int toJump = (code.getBits() & 0b0000011111111111);
     if (code.getNthBit(11)) toJump = ((~toJump & 0b011111111111) + 1)*-1;
 
+    // Push current program counter to stack
+    if (stack.getPointer() > 0x0100) {
+        int temp = programCounter + 1;
+        stack.push(temp & 0b01111111100000000, "retadr L");
+        stack.push(temp & 0b00000000011111111, "retadr H");}
+    else throw "Stack is smashing into ext I/O registers.";
+
     // Update program counter.
     programCounter = programCounter + 1 + toJump;
 
@@ -426,8 +434,14 @@ void RCALL(opcode &code)
 // Return from subroutine.
 void RET(opcode &code)
 {
-    programCounter++;
+    // Get address from stack.
+    int toJump = stack.pop();
+    toJump = toJump | (stack.pop() << 8);   
 
+    // Update program counter.
+    programCounter = toJump;
+
+    // Translate assembly and put in optcode.
     code.assembly = std::string("ret");
 }
 
