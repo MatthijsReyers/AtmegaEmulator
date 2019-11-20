@@ -2,6 +2,9 @@
 
 Readme is to be written
 
+## Limitations
+*Reverse assembling:* Because of the way the AVR assembly instructions are translated to opcodes, it is impossible to differentiate between certain instructions. An example of this is the "Branch if Equal" instruction and the ...
+
 ## Instructions support.
 
 | Status | Instructions |
