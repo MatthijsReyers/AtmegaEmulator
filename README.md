@@ -2,6 +2,8 @@
 
 Readme is to be written
 
+## Instructions support.
+
 | Status | Instructions |
 | ------ | ------------ |
 | Fully supported | AND, BCLR, BRBC, BRBS, BRCC, BRCS, BREQ, BRGE, BRHC, BRHS, BRID, BRIE, BRLO, BRLT, BRMI, BRNE, BRPL, BRSH, BRTC, BRTS, BRVC, BRVS, BSET, SUB, LDI, NOP, RCALL, RET, RJMP |
