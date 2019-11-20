@@ -418,8 +418,8 @@ void RCALL(opcode &code)
     // Push current program counter to stack
     if (stack.getPointer() > 0x0100) {
         int temp = programCounter + 1;
-        stack.push(temp & 0b01111111100000000, "retadr L");
-        stack.push(temp & 0b00000000011111111, "retadr H");}
+        stack.push(temp & 0b01111111100000000, "retadr H");
+        stack.push(temp & 0b00000000011111111, "retadr L");}
     else throw "Stack is smashing into ext I/O registers.";
 
     // Update program counter.
@@ -436,7 +436,7 @@ void RET(opcode &code)
 {
     // Get address from stack.
     int toJump = stack.pop();
-    toJump = toJump | (stack.pop() << 8);   
+    toJump = toJump + (stack.pop() << 8);
 
     // Update program counter.
     programCounter = toJump;

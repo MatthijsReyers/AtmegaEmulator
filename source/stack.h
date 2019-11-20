@@ -57,11 +57,11 @@ void stackObj::decPointer()
 
 auto stackObj::pop()
 {
+    int temp = registers[this->stackpointer].getValue();
     registers[this->stackpointer].setValue(0);
     registers[this->stackpointer].setName("empty   ");
     this->incPointer();
     this->items--;
-    int temp = registers[this->stackpointer].getValue();
     return temp;
 }
 

@@ -184,6 +184,11 @@ void drawTabBasicView(int base, int end)
     int height = winY - 5;
     int width = winX - base - 4;
 
+    // 
+    std::stringstream ss;
+    ss << "Program counter: " << std::bitset<17>(programCounter);
+    mvaddstr(5,base+16,ss.str().c_str());
+
     // Draw registers.
     int counter = 0;
     for (int collumn = 0; collumn < ceil(32.0/(float)height); collumn++)
