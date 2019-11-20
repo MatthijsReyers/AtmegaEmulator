@@ -119,6 +119,8 @@ void initSearchTree()
     addopcode(SBRC,0b1111110, 7);
     addopcode(RCALL,0b1101, 4);
     addopcode(RJMP,0b1100, 4);
+
+    addopcode(SUB, 0b000110, 6);
 }
 
 

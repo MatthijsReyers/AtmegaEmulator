@@ -16,8 +16,8 @@ class stackObj
         // Pointer related functions.
         void incPointer();
         void decPointer();
-        auto setPointer(int p) {this->stackpointer = p; updateReg();}
         auto getPointer() {return this->stackpointer;}
+        auto setPointer(int p) {this->stackpointer = p; updateReg();}
 
         // Stack related functions.
         auto push(int item, std::string name);

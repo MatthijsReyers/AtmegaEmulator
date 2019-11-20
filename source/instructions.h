@@ -46,7 +46,7 @@ void ADC(opcode &code)
     flags.setC(result > 255);
 
     // S - Sign flag.
-    flags.setN(flags.getV() != flags.getN());
+    flags.setS(flags.getV() != flags.getN());
     
     // Increment program counter.
     programCounter++;
@@ -486,4 +486,46 @@ void SBRC(opcode &code)
 void SLEEP(opcode &code)
 {
     programCounter++;
+}
+
+void SUB(opcode &code)
+{
+    short Rr = (code.getBits() & 0b01111) + ((code.getBits() & 0b01000000000) >> 5);
+    short Rd = (code.getBits() & 0b0111110000) >> 4;
+
+    bool Rd7 = registers[Rd].getNthBit(7);
+    bool Rr7 = registers[Rr].getNthBit(7);
+    bool Rd3 = registers[Rd].getNthBit(3);
+    bool Rr3 = registers[Rr].getNthBit(3);
+
+    int result = registers[Rd].getValue() - registers[Rr].getValue();
+    registers[Rd].setValue(result);
+
+    bool R7 = result & 0b010000000;
+    bool R3 = result & 0b000001000;
+
+    // H - Half carry. (Set if there was a borrow from bit 3; cleared otherwise).
+    flags.setH( ((!Rd3)&Rr3) | (Rr3&R3) | (R3&(!Rd3)) );
+
+    // S - Sign flag.
+    flags.setN(flags.getV() != flags.getN());
+
+    // V - Overflow flag. (Set if two’s complement overflow resulted from the operation; cleared otherwise.).
+    flags.setV( (Rd7&(!Rr7)&R7) | ((!Rd7)&Rd7&R7) );
+
+    // N - Negative flag is bit 7.
+    flags.setN(R7);
+
+    // Z - Zero flag.
+    flags.setZ(result == 0);
+
+    // C - Clear flag.
+    flags.setC( ((!Rd7)&Rr7) | (Rr7&R7) | (R7&(!Rd7)) );
+
+    programCounter++;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "sub  " << registers[Rd].getName() << ", " << registers[Rr].getName();
+    code.assembly = ss.str();
 }
