@@ -351,6 +351,7 @@ void CBI(opcode &code)
 // Clear carry flag.
 void CLC(opcode &code)
 {
+
     programCounter++;
 }
 
@@ -406,6 +407,12 @@ void LSR(opcode &code)
     std::stringstream ss;
     ss << "lsr " << registers[toShift].getName();
     code.assembly = ss.str();
+}
+
+// No operation.
+void NOP(opcode &code)
+{
+    programCounter++;
 }
 
 // Relative Call to Subroutine
@@ -467,11 +474,11 @@ void RJMP(opcode &code)
 void SBRC(opcode &code)
 {
     // Parse opcode
-    short bitNum = ((code.getBits() & 0b0000000000000111));
-    short toCheck = ((code.getBits() & 0b0000000111110000) >> 4);
+    short bit = ((code.getBits() & 0b0000000000000111));
+    short Rr = ((code.getBits() & 0b0000000111110000) >> 4);
 
     // Get bit from register
-    bool state = registers[toCheck].getNthBit(bitNum);
+    bool state = registers[Rr].getNthBit(bit);
 
     // Skip instruction if register is clear;
     if (state = false) programCounter = programCounter + 2;
@@ -479,15 +486,18 @@ void SBRC(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "sbrc " << registers[toCheck].getName() << ", " << bitNum;
+    ss << "sbrc " << registers[Rr].getName() << ", " << bit;
     code.assembly = ss.str();
 }
 
+// Set circuit in sleep mode.
 void SLEEP(opcode &code)
 {
     programCounter++;
+    throw "Circuit set in sleep mode";
 }
 
+// Substract without carry.
 void SUB(opcode &code)
 {
     short Rr = (code.getBits() & 0b01111) + ((code.getBits() & 0b01000000000) >> 5);
