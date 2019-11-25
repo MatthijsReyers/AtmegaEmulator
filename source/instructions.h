@@ -21,29 +21,36 @@ void BREAK(opcode &code)
 void ADC(opcode &code) 
 {
     // Parse opcode.
-    short toAdd = ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 4));
-    short toAddTo = ((code.getBits() & 0b0000000111110000) >> 4);
+    short Rr = ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 4));
+    short Rd = ((code.getBits() & 0b0000000111110000) >> 4);
+
+    bool Rd7 = registers[Rd].getNthBit(7);
+    bool Rr7 = registers[Rr].getNthBit(7);
+    bool Rd3 = registers[Rd].getNthBit(3);
+    bool Rr3 = registers[Rr].getNthBit(3);
 
     // Calculate result and add to register.
-    int previousValue = registers[toAddTo].getValue();
-    int result = previousValue + registers[toAdd].getValue();
+    int result = registers[Rd].getValue() + registers[Rr].getValue();
     if (flags.getC()) result++;
-    registers[toAddTo].setValue(result);
+    registers[Rd].setValue(result);
 
-    // H - Half carry flag.
-    // flags.setH(result >= 16);
+    bool R7 = result & 0b010000000;
+    bool R3 = result & 0b000001000;
 
-    // V
-    // flags.setV(1);
+    // H - Half carry. (Set if there was a borrow from bit 3).
+    flags.setH( (Rd3&&Rr3) || (Rr3&&(!R3)) || (Rd3&&(!R3)) );
 
-    // N - Negative flag.
-    flags.setN(registers[toAddTo].getNthBit(7));
+    // V - Overflow flag. (Set if two’s complement overflow resulted from the operation).
+    flags.setV( (Rd7&&Rr7&&(!R7)) || ((!Rd7)&&(!Rr7)&&R7) );
+
+    // N - Negative flag is bit 7.
+    flags.setN(R7);
 
     // Z - Zero flag.
     flags.setZ(result == 0);
 
-    // C - carry flag.
-    flags.setC(result > 255);
+    // C - Carry flag.
+    flags.setC( ((!Rd7)&&Rr7) || (Rr7&&R7) || (R7&&(!Rd7)) );
 
     // S - Sign flag.
     flags.setS(flags.getV() != flags.getN());
@@ -53,7 +60,7 @@ void ADC(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "adc  " << registers[toAddTo].getName() << ", " << registers[toAdd].getName();
+    ss << "adc  " << registers[Rd].getName() << ", " << registers[Rr].getName();
     code.assembly = ss.str();
 }
 
@@ -61,74 +68,114 @@ void ADC(opcode &code)
 void ADD(opcode &code) 
 {
     // Parse opcode.
-    short toAdd = ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 5));
-    short toAddTo = ((code.getBits() & 0b0000000111110000) >> 4);
+    short Rr = ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 5));
+    short Rd = ((code.getBits() & 0b0000000111110000) >> 4);
+
+    bool Rd7 = registers[Rd].getNthBit(7);
+    bool Rr7 = registers[Rr].getNthBit(7);
+    bool Rd3 = registers[Rd].getNthBit(3);
+    bool Rr3 = registers[Rr].getNthBit(3);
 
     // Calculate result and add to register.
-    int result = registers[toAddTo].getValue() + registers[toAdd].getValue();
-    registers[toAddTo].setValue((short)result);
+    int result = registers[Rd].getValue() + registers[Rr].getValue();
+    registers[Rd].setValue((short)result);
 
-    // Half carry flag.
-    // flags.setH(result >= 16);
+    bool R7 = result & 0b010000000;
+    bool R3 = result & 0b000001000;
 
-    // V
+    // H - Half carry. (Set if there was a borrow from bit 3).
+    flags.setH( (Rd3&&Rr3) || (Rr3&&(!R3)) || (Rd3&&(!R3)) );
 
-    // N - Negative flag.
-    flags.setN(registers[toAddTo].getNthBit(7));
+    // V - Overflow flag. (Set if two’s complement overflow resulted from the operation).
+    flags.setV( (Rd7&&Rr7&&(!R7)) || ((!Rd7)&&(!Rr7)&&R7) );
 
-    // Z - zero flag.
+    // N - Negative flag is bit 7.
+    flags.setN(R7);
+
+    // Z - Zero flag.
     flags.setZ(result == 0);
 
-    // C - carry flag.
-    flags.setC(result > 255);
+    // C - Carry flag.
+    flags.setC( (Rd7&&Rr7) || (Rr7&&(!R7)) || (R7&&(!Rd7)) );
 
     // S - Sign flag.
-    flags.setN(flags.getV() != flags.getN());
+    flags.setS(flags.getV() != flags.getN());
 
     // Increment program counter.
     programCounter++;
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "add  " << registers[toAddTo].getName() << ", " << registers[toAdd].getName();
+    ss << "add  " << registers[Rd].getName() << ", " << registers[Rr].getName();
     code.assembly = ss.str();
 }
 
 // Add immediate to Word.
 void ADIW(opcode &code)
 {
+    short K = (code.getBits() & 0b01111) + ((code.getBits() & 0b0011000000) >> 2);
+    short Rdl = ((code.getBits() & 0b00110000) >> 4) + 24;
+    short Rdh = Rdl + 1;
+
+    bool Rdh7 = registers[Rdh].getNthBit(7);
+
+    int base = registers[Rdl].getValue() + (registers[Rdh].getValue() << 8);
+    int result = base + K;
+
+    bool R15 = registers[Rdh].getNthBit(7);
+
+    // V - Overflow flag. (Set if two’s complement overflow resulted from the operation).
+    flags.setV( (!Rdh7) && R15 );
+
+    // N - Negative flag is bit 7 of high register.
+    flags.setN(R15);
+
+    // Z - Zero flag.
+    flags.setZ(result == 0);
+
+    // C - Carry flag.
+    flags.setC( (!R15) && Rdh7 );
+
+    // S - Sign flag.
+    flags.setS(flags.getV() != flags.getN());
+
     programCounter++;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "adiw " << registers[Rdh].getName() << ":" << registers[Rdl].getName() << ", " << K;
+    code.assembly = ss.str();
 }
 
 // Logical AND.
 void AND(opcode &code)
 {
     // Parse opcode.
-    short toAnd = 16 + ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 5));
-    short toAndTo = 16 + ((code.getBits() & 0b0000000111110000) >> 4);
+    short Rr = ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000001000000000) >> 5));
+    short Rd = ((code.getBits() & 0b0000000111110000) >> 4);
 
     // Calcuate result and add to register.
-    int result = registers[toAndTo].getValue() & registers[toAnd].getValue();
-    registers[toAndTo].setValue(result);
+    int result = registers[Rd].getValue() & registers[Rr].getValue();
+    registers[Rd].setValue(result);
 
     // V (cleared)
     flags.setV(0);
 
     // N - Negative flag.
-    flags.setN(registers[toAndTo].getNthBit(7));
+    flags.setN(registers[Rd].getNthBit(7));
 
     // Z - Zeroflag
     flags.setZ(result == 0);
 
     // S - Sign flag.
-    flags.setN(flags.getV() != flags.getN());
+    flags.setS(flags.getV() != flags.getN());
 
     // Increment program counter.
     programCounter++;
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "and  " << registers[toAndTo].getName() << ", " << registers[toAnd].getName() << std::endl;
+    ss << "and  " << registers[Rd].getName() << ", " << registers[Rr].getName() << std::endl;
     code.assembly = ss.str();
 }
 
@@ -136,31 +183,31 @@ void AND(opcode &code)
 void ANDI(opcode &code)
 {
     // Parse opcode.
-    short toAnd = ((code.getBits() & 0b0000000000001111) | ((code.getBits() & 0b0000111100000000) >> 4));
-    short toAndTo = 16 + ((code.getBits() & 0b0000000011110000) >> 4);
+    short K = ((code.getBits() & 0b001111) | ((code.getBits() & 0b0000111100000000) >> 4));
+    short Rd = 16 + ((code.getBits() & 0b0011110000) >> 4);
 
     // Calcuate result and add to register.
-    int result = registers[toAndTo].getValue() & toAnd;
-    registers[toAndTo].setValue(result);
+    int result = registers[Rd].getValue() & K;
+    registers[Rd].setValue(result);
 
     // V - Overflow flag (cleared).
     flags.setV(0);
 
     // N - Negative flag is bit 7.
-    flags.setN(registers[toAndTo].getNthBit(7));
+    flags.setN(registers[Rd].getNthBit(7));
 
     // Z - Zero flag.
     flags.setZ(result == 0);
 
     // S - Sign flag.
-    flags.setN(flags.getV() != flags.getN());
+    flags.setS(flags.getV() != flags.getN());
 
     // Increment program counter.
     programCounter++;
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "and  " << registers[toAndTo].getName() << ", " << registers[toAnd].getName();
+    ss << "andi " << registers[Rd].getName() << ", " << K;
     code.assembly = ss.str();
 }
 
@@ -168,36 +215,36 @@ void ANDI(opcode &code)
 void ASR(opcode &code)
 {
     // Parse opcode.
-    short toShift = (code.getBits() & 0b0000000111110000) >> 4;
+    short Rd = (code.getBits() & 0b0000000111110000) >> 4;
 
     // Carry flag is set to Bit 0.
-    flags.setC(registers[toShift].getNthBit(0));
+    flags.setC(registers[Rd].getNthBit(0));
 
     // Bit 7 stays bit 7.
-    short bit7 = registers[toShift].getNthBit(7);
+    short bit7 = registers[Rd].getNthBit(7);
 
     // Actually shift bits and add bit 7.
-    short result = (registers[toShift].getValue() >> 1) | (bit7 << 7);
-    registers[toShift].setValue(result);
-
-    // V - Overflow flag.
-    // flags.setV();
+    short result = (registers[Rd].getValue() >> 1) | (bit7 << 7);
+    registers[Rd].setValue(result);
 
     // N - Negative flag is bit 7.
-    flags.setN(registers[toShift].getNthBit(7));
+    flags.setN(registers[Rd].getNthBit(7));
 
     // Z - Zero flag.
     flags.setZ(result == 0);
 
     // S - Sign flag.
-    flags.setN(flags.getV() != flags.getN());
+    flags.setS(flags.getV() != flags.getN());
+    
+    // V - Overflow flag. N ⊕ C (For N and C after the shift)
+    flags.setV(flags.getN() != flags.getC());
 
     // Increment program counter.
     programCounter++;
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "asr  " << registers[toShift].getName();
+    ss << "asr  " << registers[Rd].getName();
     code.assembly = ss.str();
 }
 
@@ -215,7 +262,19 @@ void BCLR(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "bclr " << flagNum;
+    switch (flagNum)
+    {
+        case 0: ss << "clc"; break;
+        case 1: ss << "clz"; break;
+        case 2: ss << "cln"; break;
+        case 3: ss << "clv"; break;
+        case 4: ss << "cls"; break;
+        case 5: ss << "clh"; break;
+        case 6: ss << "clt"; break;
+        case 7: ss << "cli"; break;
+
+        default: ss << "bclr " << flagNum; break;
+    }
     code.assembly = ss.str();
 }
 
@@ -223,18 +282,18 @@ void BCLR(opcode &code)
 void BLD(opcode &code)
 {
     // Parse opcode.
-    short regToLoad = (code.getBits() & 0b00111110000) >> 4;
-    short bitToLoad = (code.getBits() & 0b0111);
+    short Rd = (code.getBits() & 0b00111110000) >> 4;
+    short bit = (code.getBits() & 0b0111);
 
-    //
-    registers[regToLoad].setNthBit(bitToLoad, flags.getT());
+    // Update value in register.
+    registers[Rd].setNthBit(bit, flags.getT());
 
     // Increment program counter.
     programCounter++;
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "bld r" << regToLoad << ", " << bitToLoad;
+    ss << "bld  " << Rd << ", " << bit;
     code.assembly = ss.str();
 }
 
@@ -328,31 +387,75 @@ void BSET(opcode &code)
 // Bit store from bit in Register to T flag.
 void BST(opcode &code)
 {
-    programCounter++;
-}
+    short Rd = (code.getBits() & 0b0111110000) >> 4;
+    short bit = code.getBits() & 0b0111;
 
-// Long Call to a Subroutine.
-void CALL(opcode &code)
-{
-    programCounter++;
+    flags.setT(registers[Rd].getNthBit(bit));
+
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "call " << 999;
+    ss << "bst  " << registers[Rd].getName() << ", " << bit;
     code.assembly = ss.str();
 }
 
 // Clear bit in I/O register.
 void CBI(opcode &code)
 {
+    short A = 0x20 + ((code.getBits() & 0b011111000) >> 3);
+    short bit = code.getBits() & 0b0111;
+
+    registers[A].setNthBit(bit, 0);
+
     programCounter++;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "cbi  " << registers[A].getName() << ", " << bit;
+    code.assembly = ss.str();
 }
 
-// Clear carry flag.
-void CLC(opcode &code)
+void CP(opcode &code)
 {
+    // Parse opcode
+    short Rd = (code.getBits() & 0b0111110000) >> 4;
+    short Rr = (code.getBits() & 0b01111) + ((code.getBits() & 0b01000000000) >> 5);
 
+    bool Rd7 = registers[Rd].getNthBit(7);
+    bool Rr7 = registers[Rr].getNthBit(7);
+    bool Rd3 = registers[Rd].getNthBit(3);
+    bool Rr3 = registers[Rr].getNthBit(3);
+
+    int R = registers[Rd].getValue() - registers[Rr].getValue();
+
+    bool R7 = R & 0b010000000;
+    bool R3 = R & 0b000001000;
+
+    // H - Half carry. (Set if there was a borrow from bit 3).
+    flags.setH( ((!Rd3)&&Rr3) || (Rr3&&R3) || (R3&&(!Rd3)) );
+
+    // V - Overflow flag. (Set if two’s complement overflow resulted from the operation).
+    flags.setV( (Rd7&&(!Rr7)&&(!R7)) || ((!Rd7)&&Rr7&&R7) );
+
+    // N - Negative flag is bit 7.
+    flags.setN(R7);
+
+    // Z - Zero flag.
+    flags.setZ(R == 0);
+
+    // C - Carry flag.
+    flags.setC( (Rd7&&Rr7) || (Rr7&&(!R7)) || (R7&&(!Rd7)) );
+
+    // S - Sign flag.
+    flags.setS(flags.getV() != flags.getN());
+
+    // Increment program counter.
     programCounter++;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "cp   " << registers[Rd].getName() << ", " << registers[Rr].getName();
+    code.assembly = ss.str();
 }
 
 // Load immediate.
@@ -380,22 +483,22 @@ void LDI(opcode &code)
 void LSR(opcode &code)
 {
     // Parse opcode.
-    short toShift = ((code.getBits() & 0b0000000111110000) >> 4);
+    short Rd = ((code.getBits() & 0b0000000111110000) >> 4);
 
     // Carry is set if least significant bit of register is set before shift.
-    flags.setC(registers[toShift].getNthBit(0));
+    flags.setC(registers[Rd].getNthBit(0));
 
     // Negative flag
     flags.setN(false);
 
     // Shift bits in register.
-    short shifted = registers[toShift].getValue() >> 1 & 0b0111111111111111;
-    registers[toShift].setValue(shifted);
+    short shifted = registers[Rd].getValue() >> 1 & 0b0111111111111111;
+    registers[Rd].setValue(shifted);
 
     // V
 
     // Zero flag (determined after shift).
-    flags.setZ(registers[toShift].getValue() == 0);
+    flags.setZ(registers[Rd].getValue() == 0);
 
     // S - Sign flag.
     flags.setN(flags.getV() != flags.getN());
@@ -405,14 +508,33 @@ void LSR(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "lsr " << registers[toShift].getName();
+    ss << "lsr  " << registers[Rd].getName();
     code.assembly = ss.str();
 }
 
-// No operation.
+// Copy register
+void MOV(opcode &code)
+{
+    // Parse opcode.
+    short Rd = (code.getBits() & 0b000111110000) >> 4;
+    short Rr = (code.getBits() & 0b01111) + ((code.getBits() & 0b001000000000) >> 9);
+
+    // Move value.
+    registers[Rd].setValue(registers[Rr].getValue());
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "mov  " << registers[Rd].getName() << ", " << registers[Rr].getName();
+    code.assembly = ss.str();
+}
+
+// No Operation.
 void NOP(opcode &code)
 {
     programCounter++;
+
+    // Make a string for translated assembly and put in optcode.
+    code.assembly = std::string("nop");
 }
 
 // Relative Call to Subroutine
@@ -490,13 +612,6 @@ void SBRC(opcode &code)
     code.assembly = ss.str();
 }
 
-// Set circuit in sleep mode.
-void SLEEP(opcode &code)
-{
-    programCounter++;
-    throw "Circuit set in sleep mode";
-}
-
 // Substract without carry.
 void SUB(opcode &code)
 {
@@ -521,7 +636,7 @@ void SUB(opcode &code)
     flags.setN(flags.getV() != flags.getN());
 
     // V - Overflow flag. (Set if two’s complement overflow resulted from the operation; cleared otherwise.).
-    flags.setV( (Rd7&(!Rr7)&R7) | ((!Rd7)&Rd7&R7) );
+    flags.setV( (Rd7&(!Rr7)&R7) | ((!Rd7)&(!Rd7)&R7) );
 
     // N - Negative flag is bit 7.
     flags.setN(R7);
@@ -529,7 +644,7 @@ void SUB(opcode &code)
     // Z - Zero flag.
     flags.setZ(result == 0);
 
-    // C - Clear flag.
+    // C - Carry flag.
     flags.setC( ((!Rd7)&Rr7) | (Rr7&R7) | (R7&(!Rd7)) );
 
     programCounter++;
@@ -538,4 +653,100 @@ void SUB(opcode &code)
     std::stringstream ss;
     ss << "sub  " << registers[Rd].getName() << ", " << registers[Rr].getName();
     code.assembly = ss.str();
+}
+
+// Substract without carry.
+void SUBI(opcode &code)
+{
+    short Rd = (code.getBits() & 0b0111110000) >> 4;
+    short K = (code.getBits() & 0b01111) + ((code.getBits() & 0b0111100000000) >> 4);
+
+    bool Rd7 = registers[Rd].getNthBit(7);
+    bool K7 = 0b010000000 & K;
+    bool Rd3 = registers[Rd].getNthBit(3);
+    bool K3 = 0b000001000 & K;
+
+    int result = registers[Rd].getValue() - K;
+    registers[Rd].setValue(result);
+
+    bool R7 = result & 0b010000000;
+    bool R3 = result & 0b000001000;
+
+    // H - Half carry. (Set if there was a borrow from bit 3; cleared otherwise).
+    flags.setH( ((!Rd3)&K3) | (K3&R3) | (R3&(!Rd3)) );
+
+    // S - Sign flag.
+    flags.setN(flags.getV() != flags.getN());
+
+    // V - Overflow flag. (Set if two’s complement overflow resulted from the operation; cleared otherwise.).
+    flags.setV( (Rd7&(!K7)&R7) | ((!Rd7)&(!Rd7)&R7) );
+
+    // N - Negative flag is bit 7.
+    flags.setN(R7);
+
+    // Z - Zero flag.
+    flags.setZ(result == 0);
+
+    // C - Carry flag.
+    flags.setC( ((!Rd7)&K7) | (K7&R7) | (R7&(!Rd7)) );
+
+    programCounter++;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "subi " << registers[Rd].getName() << ", " << registers[K].getName();
+    code.assembly = ss.str();
+}
+
+// Swap nibbles.
+void SWAP(opcode &code)
+{
+    // Parse opcode.
+    short Rd = (code.getBits() & 0b0111110000) >> 4;
+
+    short hig = (registers[Rd].getValue() & 0b011110000 ) >> 4;
+    short low = (registers[Rd].getValue() & 0b000001111 ) << 4;
+
+    registers[Rd].setValue(hig + low);
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "swap " << Rd;
+    code.assembly = ss.str();
+}
+
+// ================================ NOT ACTUALLY IMPLEMENTED ================================
+
+void COM(opcode &code)
+{
+    programCounter++;
+}
+
+// Long Call to a Subroutine.
+void CALL(opcode &code)
+{
+    programCounter++;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "call " << 999;
+    code.assembly = ss.str();
+}
+
+void EOR(opcode &code)
+{
+    int Rd = 0;
+    int Rr = 0;
+
+    std::stringstream ss;
+    if (Rd == Rr) ss << "clr  " << registers[Rd].getName();
+    else ss << "eor  " << registers[Rd].getName() << ", " << registers[Rr].getName();
+    code.assembly = ss.str();
+}
+
+// Set circuit in sleep mode.
+void SLEEP(opcode &code)
+{
+    programCounter++;
+    throw "Circuit set in sleep mode";
 }

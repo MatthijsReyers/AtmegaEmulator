@@ -40,7 +40,18 @@ int main(int argc, char* argv[])
         // Unit test mode
         if (settings.unitTestModeFlag)
         {
-            throw "Sorry unit test mode is currently not supported.";
+            // Reverse ASM
+            for (int i = 0; i < program.size(); i++)
+            {
+                void(* func)(opcode &code) = parseOpcode(program[i], &SearchTree);
+                (* func)(program[i]);
+            }
+
+            // Write ASM to disk
+            for (int i = 0; i < program.size(); i++)
+            {
+                // HERE
+            }
         }
 
         // Try to reverse assembly.

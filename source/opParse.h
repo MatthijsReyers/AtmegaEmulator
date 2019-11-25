@@ -56,6 +56,7 @@ void SPECIAL(opcode &code)
         else if (code.getBits() == 0b1001010100001000) RET(code);
         else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000101) ASR(code);
         else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000110) LSR(code);
+        else if ((code.getBits() & 0b1111111100000000) == 0b1001100000000000) CBI(code);
         else if ((code.getBits() & 0b1111111110001111) == 0b1001010010001000) BCLR(code);
         else if ((code.getBits() & 0b1111111110001111) == 0b1001010000001000) BSET(code);
     }    
@@ -114,6 +115,8 @@ void initSearchTree()
     addopcode(BRBC,0b111101, 6);
     addopcode(BRBS,0b111100, 6);
     addopcode(BST, 0b1111101, 7);
+
+    addopcode(CBI, 0b10011000, 8);
 
     addopcode(LDI, 0b1110, 4);
     addopcode(NOP, 0b0000000000000000, 16);
