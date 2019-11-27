@@ -14,3 +14,7 @@ cli
 cln
 clt
 cls
+push r16
+push r17
+push r16
+rjmp -20

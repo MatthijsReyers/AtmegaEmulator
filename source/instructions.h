@@ -426,7 +426,7 @@ void CBI(opcode &code)
     code.assembly = ss.str();
 }
 
-// Compare
+// Compare.
 void CP(opcode &code)
 {
     // Parse opcode
@@ -438,7 +438,53 @@ void CP(opcode &code)
     bool Rd3 = registers[Rd].getNthBit(3);
     bool Rr3 = registers[Rr].getNthBit(3);
 
+    int R = (registers[Rd].getValue() - registers[Rr].getValue()) & 0b011111111;
+
+    bool R7 = (R & 0b010000000) >> 7;
+    bool R3 = (R & 0b000001000) >> 3;
+
+    // H - Half carry. (Set if there was a borrow from bit 3).
+    flags.setH( ((!Rd3)&&Rr3) || (Rr3&&R3) || (R3&&(!Rd3)) );
+
+    // V - Overflow flag. (Set if two’s complement overflow resulted from the operation).
+    flags.setV( (Rd7&&(!Rr7)&&(!R7)) || ((!Rd7)&&Rr7&&R7) );
+
+    // N - Negative flag is bit 7.
+    flags.setN(R7);
+
+    // Z - Zero flag.
+    flags.setZ(R == 0);
+
+    // C - Carry flag.
+    flags.setC( (Rd7&&Rr7) || (Rr7&&(!R7)) || (R7&&(!Rd7)) );
+
+    // S - Sign flag.
+    flags.setS(flags.getV() != flags.getN());
+
+    // Increment program counter.
+    programCounter++;
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "cp   " << registers[Rd].getName() << ", " << registers[Rr].getName();
+    code.assembly = ss.str();
+}
+
+// Compare with carry.
+void CPC(opcode &code)
+{
+    // Parse opcode
+    short Rd = (code.getBits() & 0b0111110000) >> 4;
+    short Rr = (code.getBits() & 0b01111) + ((code.getBits() & 0b01000000000) >> 5);
+
+    bool Rd7 = registers[Rd].getNthBit(7);
+    bool Rr7 = registers[Rr].getNthBit(7);
+    bool Rd3 = registers[Rd].getNthBit(3);
+    bool Rr3 = registers[Rr].getNthBit(3);
+
     int R = registers[Rd].getValue() - registers[Rr].getValue();
+    if (flags.getC()) R--;
+    R = R & 0b011111111;
 
     bool R7 = R & 0b010000000;
     bool R3 = R & 0b000001000;
@@ -470,29 +516,28 @@ void CP(opcode &code)
     code.assembly = ss.str();
 }
 
-// Compare with carry
-void CPC(opcode &code)
+// Compare with immediate.
+void CPI(opcode &code)
 {
-    // Parse opcode
-    short Rd = (code.getBits() & 0b0111110000) >> 4;
-    short Rr = (code.getBits() & 0b01111) + ((code.getBits() & 0b01000000000) >> 5);
+    short K = ((code.getBits() & 0b0000111100000000) >> 4) | (code.getBits() & 0b0000000000001111);
+    short Rd = ((code.getBits() & 0b0000000011110000) >> 4) + 16;
 
-    bool Rd7 = registers[Rd].getNthBit(7);
-    bool Rr7 = registers[Rr].getNthBit(7);
+    short R = (registers[Rd].getValue() - K) & 0b011111111;
+
     bool Rd3 = registers[Rd].getNthBit(3);
-    bool Rr3 = registers[Rr].getNthBit(3);
+    bool Rd7 = registers[Rd].getNthBit(7);
 
-    int R = registers[Rd].getValue() - registers[Rr].getValue();
-    if (flags.getC()) R--;
+    bool R7 = (R & 0b010000000) >> 7;
+    bool R3 = (R & 0b000001000) >> 3;
 
-    bool R7 = R & 0b010000000;
-    bool R3 = R & 0b000001000;
+    bool K7 = (K & 0b010000000) >> 7;
+    bool K3 = (K & 0b000001000) >> 3;
 
     // H - Half carry. (Set if there was a borrow from bit 3).
-    flags.setH( ((!Rd3)&&Rr3) || (Rr3&&R3) || (R3&&(!Rd3)) );
+    flags.setH( ((!Rd3)&&K3) || (K3&&R3) || (R3&&(!Rd3)) );
 
     // V - Overflow flag. (Set if two’s complement overflow resulted from the operation).
-    flags.setV( (Rd7&&(!Rr7)&&(!R7)) || ((!Rd7)&&Rr7&&R7) );
+    flags.setV( (Rd7&&(!K7)&&(!R7)) || ((!Rd7)&&K7&&R7) );
 
     // N - Negative flag is bit 7.
     flags.setN(R7);
@@ -501,7 +546,7 @@ void CPC(opcode &code)
     flags.setZ(R == 0);
 
     // C - Carry flag.
-    flags.setC( (Rd7&&Rr7) || (Rr7&&(!R7)) || (R7&&(!Rd7)) );
+    flags.setC( ((!Rd7)&&K7) || (K7&&R7) || (R7&&(!Rd7)) );
 
     // S - Sign flag.
     flags.setS(flags.getV() != flags.getN());
@@ -511,7 +556,7 @@ void CPC(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "cp   " << registers[Rd].getName() << ", " << registers[Rr].getName();
+    ss << "cpi " << registers[Rd].getName() << ", " << K;
     code.assembly = ss.str();
 }
 
@@ -636,6 +681,24 @@ void NOP(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     code.assembly = std::string("nop");
+}
+
+// Push register on stack.
+void PUSH(opcode &code)
+{
+    short Rd = (code.getBits() & 0b000111110000) >> 4;
+
+    programCounter++;
+
+    std::stringstream ss;
+    ss << "PUSH R" << Rd;
+
+    stack.push(registers[Rd].getValue(), ss.str());
+
+    ss.str("");
+    ss << "push " << registers[Rd].getName();
+
+    code.assembly = ss.str();
 }
 
 // Relative Call to Subroutine
