@@ -12,5 +12,4 @@ ldi     r17, -5
 add     r17, r16        ; Negative flag
 
 
-end:
-    rjmp    end    
+rjmp    end

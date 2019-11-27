@@ -55,10 +55,12 @@ void SPECIAL(opcode &code)
         if (code.getBits() == 0b1001010110011000) BREAK(code);
         else if (code.getBits() == 0b1001010100001000) RET(code);
         else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000101) ASR(code);
-        else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000110) LSR(code);
-        else if ((code.getBits() & 0b1111111100000000) == 0b1001100000000000) CBI(code);
         else if ((code.getBits() & 0b1111111110001111) == 0b1001010010001000) BCLR(code);
         else if ((code.getBits() & 0b1111111110001111) == 0b1001010000001000) BSET(code);
+        else if ((code.getBits() & 0b1111111100000000) == 0b1001100000000000) CBI(code);
+        else if ((code.getBits() & 0b1111111000001111) == 0b1001010000001010) DEC(code);
+        else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000110) LSR(code);
+        else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000010) SWAP(code);
     }    
 }
 
@@ -117,8 +119,13 @@ void initSearchTree()
     addopcode(BST, 0b1111101, 7);
 
     addopcode(CBI, 0b10011000, 8);
+    addopcode(CP,  0b000101, 6);
+    addopcode(CPC, 0b000001, 6);
+
+    addopcode(EOR, 0b001001, 6);
 
     addopcode(LDI, 0b1110, 4);
+    addopcode(MOV, 0b001011, 6);
     addopcode(NOP, 0b0000000000000000, 16);
     addopcode(SBRC,0b1111110, 7);
     addopcode(RCALL,0b1101, 4);

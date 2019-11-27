@@ -4,6 +4,7 @@
 // 
 
 #include <iostream>
+#include <fstream>
 #include <string>
 
 #include <settings.h>
@@ -30,7 +31,7 @@ int main(int argc, char* argv[])
 
         // Load program from hex file.
         loadprogram(settings.hexFile);
-        if (program.size() == 0) throw "Could not load a valid program from specified file.";
+        if (program.size() == 0) throw "Could not load a valid program from specified file. (Is it in Intel hex format?)";
         
         // Initialize stuff.
         initRegisters();
@@ -40,18 +41,25 @@ int main(int argc, char* argv[])
         // Unit test mode
         if (settings.unitTestModeFlag)
         {
-            // Reverse ASM
+            // Make file stream.
+            std::ofstream outfile("unit-test.out");
+
+            // Reverse ASM.
             for (int i = 0; i < program.size(); i++)
             {
                 void(* func)(opcode &code) = parseOpcode(program[i], &SearchTree);
                 (* func)(program[i]);
             }
 
-            // Write ASM to disk
+            // Write ASM to file.
             for (int i = 0; i < program.size(); i++)
             {
-                // HERE
+                outfile << program[i].assembly << "\n";
             }
+
+            // Close file stream.
+            outfile.close();
+            exit(0);
         }
 
         // Try to reverse assembly.
