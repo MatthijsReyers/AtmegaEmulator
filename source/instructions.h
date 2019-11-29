@@ -426,6 +426,26 @@ void CBI(opcode &code)
     code.assembly = ss.str();
 }
 
+// One's complement
+void COM(opcode &code)
+{
+    short Rd = (code.getBits() & 0b000111110000 ) >> 4;
+    
+    registers[Rd].setValue(0x0FF - registers[Rd].getValue());
+    
+    flags.setV(10);
+    flags.setN(registers[Rd].getNthBit(7));
+    flags.setZ(registers[Rd].getValue() == 0);
+    flags.setC(1);
+    flags.setS(flags.getV() != flags.getN());
+
+    programCounter++;
+
+    std::stringstream ss;
+    ss << "com  " << registers[Rd].getName();
+    code.assembly = ss.str();
+}
+
 // Compare.
 void CP(opcode &code)
 {
@@ -684,6 +704,20 @@ void NOP(opcode &code)
 }
 
 // Push register on stack.
+void POP(opcode &code)
+{
+    short Rd = (code.getBits() & 0b000111110000) >> 4;
+
+    programCounter++;
+
+    registers[Rd].setValue(stack.pop());
+
+    std::stringstream ss;
+    ss << "pop " << registers[Rd].getName();
+    code.assembly = ss.str();
+}
+
+// Push register on stack.
 void PUSH(opcode &code)
 {
     short Rd = (code.getBits() & 0b000111110000) >> 4;
@@ -835,7 +869,7 @@ void SUB(opcode &code)
     code.assembly = ss.str();
 }
 
-// Substract without carry.
+// Substract with immediate.
 void SUBI(opcode &code)
 {
     short Rd = (code.getBits() & 0b0111110000) >> 4;
@@ -889,6 +923,8 @@ void SWAP(opcode &code)
 
     registers[Rd].setValue(hig + low);
 
+    programCounter++;
+
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
     ss << "swap " << Rd;
@@ -896,11 +932,6 @@ void SWAP(opcode &code)
 }
 
 // ================================ NOT ACTUALLY IMPLEMENTED ================================
-
-void COM(opcode &code)
-{
-    programCounter++;
-}
 
 // Long Call to a Subroutine.
 void CALL(opcode &code)

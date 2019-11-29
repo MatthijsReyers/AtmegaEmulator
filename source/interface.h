@@ -486,46 +486,70 @@ void drawTabs()
     }
 }
 
-void msgBox(std::string msg)
+struct msgBox
 {
-    clear();
+    std::string msg1 = "";
+    std::string msg2 = "";
+    std::string msg3 = "";
 
-    // Get size of terminal.
-    int winX, winY;
-    getmaxyx(stdscr, winY, winX);
+    int count;
 
-    // Calculate box size.
-    int boxLength = msg.length() + 4;
+    msgBox(std::string msg1) {this->count = 1; this->msg1 = msg1; drawBox();}
+    msgBox(std::string msg1, std::string msg2) {this->count = 2; this->msg1 = msg1; this->msg2 = msg2; drawBox();}
+    msgBox(std::string msg1, std::string msg2, std::string msg3) {this->count = 3; this->msg1 = msg1; this->msg2 = msg2; this->msg3 = msg3; drawBox();}
 
-    int Xstart = (winX - boxLength) / 2;
-    int Ystart = (winY - 3) / 2;
-
-    // Draw message.
-    mvaddstr(Ystart+1,Xstart+2,msg.c_str());
-
-    // Characters for interface.
-    const char* horizontal = "═";
-    const char* vertical = "║";
-
-    // Draw horizontal lines of box.
-    for (int i = 0; i < boxLength; i++)
+    void drawBox()
     {
-        mvaddch(Ystart-1, Xstart+i, ' ');
-        mvaddstr(Ystart, Xstart+i, horizontal);
-        mvaddstr(Ystart+2, Xstart+i, horizontal);
-        mvaddch(Ystart+3, Xstart+i, ' ');
+        // Get size of terminal.
+        int winX, winY;
+        getmaxyx(stdscr, winY, winX);
+
+        // Calculate box size.
+        int boxLength;
+        if (msg1.length() >= msg2.length() && msg1.length() >= msg3.length()) boxLength = msg1.length();
+        if (msg2.length() >= msg1.length() && msg2.length() >= msg3.length()) boxLength = msg2.length();
+        if (msg3.length() >= msg1.length() && msg3.length() >= msg2.length()) boxLength = msg3.length();
+        
+        // 
+        int Xstart = (winX - boxLength) / 2;
+        int Ystart = (winY - 2 - this->count) / 2;
+
+        clear();
+
+        // // Draw messages.
+        if (count >= 1) {
+            mvaddstr(Ystart+1, Xstart, msg1.c_str());
+            mvaddstr(Ystart+1, Xstart-2, "║");
+            mvaddstr(Ystart+1, Xstart+boxLength+1, "║");}
+        if (count >= 2) {
+            mvaddstr(Ystart+2, Xstart, msg2.c_str());
+            mvaddstr(Ystart+2, Xstart-2, "║");
+            mvaddstr(Ystart+2, Xstart+boxLength+1, "║");}
+        if (count >= 3) {
+            mvaddstr(Ystart+3, Xstart, msg3.c_str());
+            mvaddstr(Ystart+2, Xstart-2, "║");
+            mvaddstr(Ystart+3, Xstart+boxLength+1, "║");}
+        
+        // Characters for interface.
+        const char* horizontal = "═";
+        const char* vertical = "║";
+
+        // Draw horizontal lines of box.
+        for (int i = -1; i != boxLength+1; i++) {
+            mvaddstr(Ystart, Xstart+i, horizontal);
+            mvaddstr(Ystart+count+1, Xstart+i, horizontal);}
+
+        // Place corner pieces.
+        mvaddstr(Ystart, Xstart-2, "╔");
+        mvaddstr(Ystart+count+1, Xstart-2,"╚");
+        mvaddstr(Ystart, Xstart+1+boxLength, "╗");
+        mvaddstr(Ystart+count+1, Xstart+1+boxLength,"╝");
+
+        mvaddstr(winY-1,winX-1," ");
+
+        refresh();
     }
-
-    // Draw vertical lines of box.
-    mvaddstr(Ystart, Xstart, "╔");
-    mvaddstr(Ystart+1, Xstart, "║");
-    mvaddstr(Ystart+2, Xstart, "╚");
-    mvaddstr(Ystart, Xstart+boxLength-1, "╗");
-    mvaddstr(Ystart+1, Xstart+boxLength-1, "║");
-    mvaddstr(Ystart+2, Xstart+boxLength-1, "╝");
-
-    refresh();
-}
+};
 
 void winUpdate()
 {
@@ -579,8 +603,19 @@ void GUIrun()
         // ----------------------------------------
         if (programCounter == program.size())
         {
-            msgBox("The program has finished.");
-            running = false;
+            while (key != 'q' && key != 'r')
+            {
+                msgBox("      The program has finished.     ","Press [Q] to exit and [R] to restart");
+                key = getch();
+                if (key == 'q') running = false;
+                else if (key == 'r') {
+                    programCounter = 0;
+                    resetRegisters();
+                    resetFlags();
+                    resetStack();
+                    clear();
+                }
+            }
         }
 
         // Input parsing.
@@ -593,21 +628,25 @@ void GUIrun()
                 break;
 
             case '\n': // KEY_ENTER
-                if (programCounter < program.size() && programCounter >= 0){
-                    try {
-                        func = parseOpcode(program[programCounter], &SearchTree);
-                        func(program[programCounter]);}
-                    catch (const char* msg) {msgBox(std::string(msg));}}
+                if (programCounter < program.size() && programCounter >= 0)
+                {
+                    func = parseOpcode(program[programCounter], &SearchTree);
+                    func(program[programCounter]);
+                }
                 else {
-                    msgBox("The program counter points to a place outside the program.");
-                    key = getch();
-                    if (key == 'r'){
-                        programCounter = 0;
-                        resetRegisters();
-                        resetFlags();
-                        resetStack();}
-                    else {
-                        running = false;
+                    while (key != 'q' && key != 'r')
+                    {
+                        msgBox("The program counter points to a place outside the program","          Press [Q] to exit and [R] to restart.          ");
+                        key = getch();
+                        if (key == 'q') running = false;
+                        else if (key == 'r') {
+                            programCounter = 0;
+                            resetRegisters();
+                            resetFlags();
+                            resetStack();
+                            clear();
+                            winUpdate();
+                        }
                     }
                 }
                 break;

@@ -1,7 +1,5 @@
 # AtmegaEmulator
 
-Readme is to be written
-
 ## Limitations
 
 *Reverse assembling:* Because of the way the AVR assembly instructions are translated to opcodes, it is impossible to differentiate between certain instructions. An example of this is the "Branch if Equal" instruction `BREQ -5` and the "Branch if Bit in SREG in Set" instruction `BRBS 1, -5`.
@@ -12,9 +10,9 @@ Readme is to be written
 
 | Status | Instructions |
 | ------ | ------------ |
-| Fully supported | ADC, ADD, AND, ASR, BLD, BCLR, BRBC, BRBS, BRCC, BRCS, BREQ, BRGE, BRHC, BRHS, BRID, BRIE, BRLO, BRLT, BRMI, BRNE, BRPL, BRSH, BRTC, BRTS, BRVC, BRVS, BSET, CLC, CLH, CLI, CLN, CLR, CLS, CLT, CLV, CLZ, CP, CPC, CPI, DEC, EOR, LDI, LSL, LSR, MOV, NOP, RCALL, RET, RJMP, SEC, SEH, SEI, SEN, SE, SES, SET, SEV, SEZ, SUB, SUBI, SWAP |
+| Fully supported | ADC, ADD, AND, ASR, BLD, BCLR, BRBC, BRBS, BRCC, BRCS, BREQ, BRGE, BRHC, BRHS, BRID, BRIE, BRLO, BRLT, BRMI, BRNE, BRPL, BRSH, BRTC, BRTS, BRVC, BRVS, BSET, CLC, CLH, CLI, CLN, CLR, CLS, CLT, CLV, CLZ, COM, CP, CPC, CPI, DEC, EOR, LDI, LSL, LSR, MOV, NOP, POP, PUSH, RCALL, RET, RJMP, SEC, SEH, SEI, SEN, SE, SES, SET, SEV, SEZ, SUB, SUBI, SWAP |
 | Partially supported | BREAK, SLEEP |
-| Support planned | ADIW, ANDI, BST, CALL, CBI, CBR, COM, CPSE, EICALL, EIJMP, ELPM, FMUL, FUMLS, FMULSU, ICALL, IJMP, IN, INC, JMP, LAC, LAS, LAT, LD, lDD, LDS, LPM, MOVW, MUL, MULS, MULSU, NEG, OR, ORI, OUT, POP, PUSH, RETI, ROL, ROR, SBC, SBCI, SBI, SBIC, SBIS, SBIW, SBR, SBRC, SBRS, ST, STD, STS, TST |
+| Support planned | ADIW, ANDI, BST, CALL, CBI, CBR, CPSE, EICALL, EIJMP, ELPM, FMUL, FUMLS, FMULSU, ICALL, IJMP, IN, INC, JMP, LAC, LAS, LAT, LD, lDD, LDS, LPM, MOVW, MUL, MULS, MULSU, NEG, OR, ORI, OUT, RETI, ROL, ROR, SBC, SBCI, SBI, SBIC, SBIS, SBIW, SBR, SBRC, SBRS, ST, STD, STS, TST |
 | Support not planned | DES, SPM, WDR, XCH |
 
 ## Installation
@@ -23,4 +21,4 @@ There is currently only a linux version of AtmegaEmulator, because AtmegaEmulato
 
 ## Support and maintenance
 
-AtmegaEmulator is a slightly out of control hobby project that will no longer recieve new features from January 1st 2020 onwords, because the creator needs time to focus on his education and other personal projects. Major bugs might be still fixed if any are found.
+AtmegaEmulator is a slightly out of control hobby project that stop recieving new features after January 1st 2020, because the creator needs time to focus on his education and other personal projects. Major bugs might be still fixed if any are found.
