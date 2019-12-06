@@ -77,7 +77,9 @@ int main(int argc, char* argv[])
         }
         
         // Begin the UI/userinput loop.
-        GUIrun();
+        GUI interface = GUI();
+        interface.start();
+        interface.stop();
     }
     
     catch (char const* msg) 
