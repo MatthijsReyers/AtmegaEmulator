@@ -124,6 +124,10 @@ void ADIW(opcode &code)
 
     bool R15 = registers[Rdh].getNthBit(7);
 
+    // Place values.
+    registers[Rdl].setValue(result);
+    registers[Rdh].setValue(result >> 8);
+
     // V - Overflow flag. (Set if two’s complement overflow resulted from the operation).
     flags.setV( (!Rdh7) && R15 );
 
@@ -402,7 +406,6 @@ void BST(opcode &code)
     short bit = code.getBits() & 0b0111;
 
     flags.setT(registers[Rd].getNthBit(bit));
-
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;

@@ -36,6 +36,7 @@ void loadprogram(const std::string &fileUrl)
     // -------------------------------------------------------
     std::ifstream programFile;
     programFile.open(fileUrl);
+    if (programFile.fail()) throw "Failed to open file. (does it exist?)";
 
     // Read file line by line.
     // -------------------------------------------------------
@@ -43,7 +44,7 @@ void loadprogram(const std::string &fileUrl)
     while (std::getline(programFile, line))
     {
         // Check for start code, cause why not.
-        if (line.at(0) != ':') throw "Missing a start code for line in hex file?";
+        if (line.at(0) != ':' && line.at(0) != '\n') throw "Missing a start code for line in hex file. (Is it really in Intel hex format?)";
 
         // Get byte count for row.
         char temp[5] = {line.at(1),line.at(2),0x00};

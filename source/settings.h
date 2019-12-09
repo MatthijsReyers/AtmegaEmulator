@@ -23,8 +23,8 @@ class settingsObj
             if (argc == 1) throw "You need to specify a hex file to emulate.";
 
             // The file is always the last argument or a help flag.
-            if (std::string(argv[argc-1]) == "-h") helpFlag = true;
-            else hexFile = std::string(argv[argc-1]);
+            hexFile = std::string(argv[argc-1]);
+            if (hexFile == "-h" || hexFile == "--help") helpFlag = true;
 
             // Parse all other arguments.
             std::string arg, next;

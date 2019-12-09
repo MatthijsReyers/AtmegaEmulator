@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
 
         // Load program from hex file.
         loadprogram(settings.hexFile);
-        if (program.size() == 0) throw "Could not load a valid program from specified file. (Is it in Intel hex format?)";
+        if (program.size() == 0) throw "Could not load a valid program from specified file.";
         
         // Initialize stuff.
         initRegisters();
