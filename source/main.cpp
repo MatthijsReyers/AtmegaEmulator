@@ -1,8 +1,3 @@
-// 
-// GCC Compile command: 
-// g++ -I ./source ./source/main.cpp -lncursesw
-// 
-
 #include <iostream>
 #include <fstream>
 #include <string>
