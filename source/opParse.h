@@ -128,6 +128,11 @@ void initSearchTree()
     addopcode(LDI, 0b1110, 4);
     addopcode(MOV, 0b001011, 6);
     addopcode(NOP, 0b0000000000000000, 16);
+
+    addopcode(OR,  0b001010, 6);
+    addopcode(ORI, 0b0110, 4);
+    addopcode(OUT, 0b10111, 5);
+
     addopcode(SBRC,0b1111110, 7);
 
     addopcode(POP, 0b1001000,7);

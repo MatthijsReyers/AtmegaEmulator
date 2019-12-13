@@ -706,6 +706,90 @@ void NOP(opcode &code)
     code.assembly = std::string("nop");
 }
 
+// Logical OR.
+void OR(opcode &code)
+{
+    // Parse opcode.
+    short Rr = (code.getBits() & 0b01111) + ((code.getBits() & 0b01000000000) >> 5);
+    short Rd = (code.getBits() & 0b0111110000) >> 4;
+
+    // Calculate result and update destination register.
+    short result = registers[Rr].getValue() |  registers[Rd].getValue();
+    registers[Rd].setValue(result);
+
+    // V - Overflow flag (cleared).
+    flags.setV(0);
+
+    // N - Negative flag is bit 7.
+    flags.setN( registers[Rd].getNthBit(7));
+
+    // Z - Zero flag.
+    flags.setZ(result == 0);
+
+    // S - Sign flag.
+    flags.setN(flags.getV() != flags.getN());
+
+    programCounter++;
+
+    std::stringstream ss;
+    ss << "or   " << registers[Rd].getName() << ", " << registers[Rr].getName();
+    code.assembly = ss.str();
+}
+
+// Logical OR with immediate.
+void ORI(opcode &code)
+{
+    // Parse opcode.
+    short K = (code.getBits() & 0b01111) + ((code.getBits() & 0b0111100000000) >> 4);
+    short Rd = (code.getBits() & 0b011110000) >> 4;
+
+    // Calculate result and update destination register.
+    short result = K | registers[Rd].getValue();
+    registers[Rd].setValue(result);
+
+    // V - Overflow flag (cleared).
+    flags.setV(0);
+
+    // N - Negative flag is bit 7.
+    flags.setN( registers[Rd].getNthBit(7));
+
+    // Z - Zero flag.
+    flags.setZ(result == 0);
+
+    // S - Sign flag.
+    flags.setN(flags.getV() != flags.getN());
+
+    programCounter++;
+
+    std::stringstream ss;
+    ss << "ori  " << registers[Rd].getName() << ", " << K;
+    code.assembly = ss.str();
+}
+
+// Store register to I/O Location.
+void OUT(opcode &code)
+{
+    short A = 0x20 + ((code.getBits() & 0b011000000000) >> 5) + (code.getBits() & 0b01111);
+    short Rr = (code.getBits() & 0b000111110000) >> 4;
+
+    registers[A].setValue(registers[Rr].getValue());
+
+    programCounter++;
+
+    std::stringstream ss;
+    std::string name = registers[A].getName();
+
+    if (name == "reserved")
+    {
+        ss << std::hex << A;
+        name = ss.str();
+        ss.str("");
+    }
+
+    ss << "out  " << name << registers[Rr].getName();
+    code.assembly = ss.str();
+}
+
 // Push register on stack.
 void POP(opcode &code)
 {
@@ -935,6 +1019,26 @@ void SWAP(opcode &code)
 }
 
 // ================================ NOT ACTUALLY IMPLEMENTED ================================
+
+void CLR(opcode &code)
+{
+    programCounter++;
+}
+
+void SER(opcode &code)
+{
+    programCounter++;
+}
+
+void NEG(opcode &code)
+{
+    programCounter++;
+}
+
+void MOVW(opcode &code)
+{
+    programCounter++;
+}
 
 // Long Call to a Subroutine.
 void CALL(opcode &code)
