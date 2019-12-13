@@ -597,13 +597,18 @@ void DEC(opcode &code)
     flags.setN(registers[Rd].getNthBit(7));
     flags.setZ(R == 0);
     flags.setS(flags.getV() != flags.getN());
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "dec " << registers[Rd].getName();
+    code.assembly = ss.str();
 }
 
 // Exclusive OR
 void EOR(opcode &code)
 {
     short Rd = (code.getBits() & 0b000111110000) >> 4;
-    short Rr = (code.getBits() & 0b01111) + ((code.getBits() & 0b01000000000) >> 9);
+    short Rr = (code.getBits() & 0b01111) + ((code.getBits() & 0b01000000000) >> 5);
 
     int result = registers[Rd].getValue() ^ registers[Rr].getValue();
     registers[Rd].setValue(result);
@@ -622,6 +627,27 @@ void EOR(opcode &code)
     std::stringstream ss;
     if (Rd == Rr) ss << "clr  " << registers[Rd].getName();
     else ss << "eor  " << registers[Rd].getName() << ", " << registers[Rr].getName();
+    code.assembly = ss.str();
+}
+
+// Decrement
+void INC(opcode &code)
+{
+    short Rd = (code.getBits() & 0b000111110000) >> 4;
+
+    // Two’s complement overflow occurs if Rd is $80 before the operation. 
+    flags.setV(registers[Rd].getValue() == 0x80);
+
+    short R = registers[Rd].getValue() + 1;
+    registers[Rd].setValue(R);
+
+    flags.setN(registers[Rd].getNthBit(7));
+    flags.setZ(R == 0);
+    flags.setS(flags.getV() != flags.getN());
+
+    // Make a string for translated assembly and put in optcode.
+    std::stringstream ss;
+    ss << "dec " << registers[Rd].getName();
     code.assembly = ss.str();
 }
 
@@ -741,7 +767,7 @@ void ORI(opcode &code)
 {
     // Parse opcode.
     short K = (code.getBits() & 0b01111) + ((code.getBits() & 0b0111100000000) >> 4);
-    short Rd = (code.getBits() & 0b011110000) >> 4;
+    short Rd = 16 + ((code.getBits() & 0b011110000) >> 4);
 
     // Calculate result and update destination register.
     short result = K | registers[Rd].getValue();
@@ -800,7 +826,7 @@ void POP(opcode &code)
     registers[Rd].setValue(stack.pop());
 
     std::stringstream ss;
-    ss << "pop " << registers[Rd].getName();
+    ss << "pop  " << registers[Rd].getName();
     code.assembly = ss.str();
 }
 
@@ -1014,7 +1040,7 @@ void SWAP(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "swap " << Rd;
+    ss << "swap " << registers[Rd].getName();
     code.assembly = ss.str();
 }
 
