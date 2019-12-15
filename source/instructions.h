@@ -604,7 +604,7 @@ void DEC(opcode &code)
     code.assembly = ss.str();
 }
 
-// Exclusive OR
+// Exclusive OR.
 void EOR(opcode &code)
 {
     short Rd = (code.getBits() & 0b000111110000) >> 4;
@@ -630,7 +630,7 @@ void EOR(opcode &code)
     code.assembly = ss.str();
 }
 
-// Decrement
+// Decrement register.
 void INC(opcode &code)
 {
     short Rd = (code.getBits() & 0b000111110000) >> 4;
@@ -647,7 +647,7 @@ void INC(opcode &code)
 
     // Make a string for translated assembly and put in optcode.
     std::stringstream ss;
-    ss << "dec " << registers[Rd].getName();
+    ss << "inc " << registers[Rd].getName();
     code.assembly = ss.str();
 }
 

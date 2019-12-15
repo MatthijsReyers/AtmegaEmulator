@@ -44,24 +44,17 @@ auto parseOpcode(opcode code, node *currentRoot)
 // ===================================================
 void SPECIAL(opcode &code)
 {
-    // Deal with 32 bit instructions.
-    if (code.is32bit) 
-    {
-        CALL(code);
-    }
-
-    else // Deal with 16 bit instructions.
-    {
-        if (code.getBits() == 0b1001010110011000) BREAK(code);
-        else if (code.getBits() == 0b1001010100001000) RET(code);
-        else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000101) ASR(code);
-        else if ((code.getBits() & 0b1111111110001111) == 0b1001010010001000) BCLR(code);
-        else if ((code.getBits() & 0b1111111110001111) == 0b1001010000001000) BSET(code);
-        else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000000) COM(code);
-        else if ((code.getBits() & 0b1111111000001111) == 0b1001010000001010) DEC(code);
-        else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000110) LSR(code);
-        else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000010) SWAP(code);
-    }    
+    if (code.getBits() == 0b1001010110011000) BREAK(code);
+    else if (code.getBits() == 0b1001010100001000) RET(code);
+    else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000101) ASR(code);
+    else if ((code.getBits() & 0b1111111110001111) == 0b1001010010001000) BCLR(code);
+    else if ((code.getBits() & 0b1111111110001111) == 0b1001010000001000) BSET(code);
+    else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000000) COM(code);
+    else if ((code.getBits() & 0b1111111000001111) == 0b1001010000001010) DEC(code);
+    else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000110) LSR(code);
+    else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000010) SWAP(code);
+    else if ((code.getBits() & 0b1111111000001111) == 0b1001010000000011) INC(code);
+    else NOP(code);
 }
 
 
