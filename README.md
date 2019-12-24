@@ -2,7 +2,7 @@
 
 ## Limitations
 
-*Reverse assembling:* Because of the way the AVR assembly instructions are translated to opcodes, it is impossible to differentiate between certain instructions. An example of this is the "Branch if Equal" instruction `BREQ -5` and the "Branch if Bit in SREG in Set" instruction `BRBS 1, -5`. This emulator will use the deddicated instructions instead of "if bit in SREG is" style instructions wherever possible.
+*Reverse assembling:* Because of the way the AVR assembly instructions are translated to opcodes, it is impossible to differentiate between certain instructions. An example of this is the "Branch if Equal" instruction `BREQ -5` and the "Branch if Bit in SREG in Set" instruction `BRBS 1, -5`. This emulator will use the dedicated instructions instead of "if bit in SREG is" style instructions wherever possible.
 
 *Jumps and labels:* Because of the way this program is designed it does not and cannot not create or display labels, which is why it instead just shows the relative or absolute jump value for jump and call type instructions.
 
