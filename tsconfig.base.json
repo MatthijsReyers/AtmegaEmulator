@@ -10,11 +10,14 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "lib": ["es2021", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@atmega-emulator/compiler": ["libs/compiler/src/index.ts"],
+      "@atmega-emulator/emulator": ["libs/emulator/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }
